@@ -14,10 +14,10 @@ See also:
 
 ## Final v1 contract
 
-Mutation modules still set:
+Modules that need run-data rebuild/reapply behavior still set:
 
 ```lua
-public.definition.dataMutation = true
+public.definition.affectsRunData = true
 ```
 
 But the mutation lifecycle can now be authored in three shapes.
@@ -59,16 +59,6 @@ end
 public.definition.revert = revert
 ```
 
-Optional enum:
-
-```lua
-public.definition.mutationMode = lib.MutationMode.Patch
-public.definition.mutationMode = lib.MutationMode.Manual
-public.definition.mutationMode = lib.MutationMode.Hybrid
-```
-
-This is optional in v1. If present and wrong, Framework warns.
-
 ---
 
 ## Inference rules
@@ -79,7 +69,7 @@ Framework/Lib infer mutation shape from exports:
 - `apply` + `revert` only -> manual-only
 - both -> hybrid
 
-If `dataMutation = true` but the module exposes neither patch nor manual lifecycle, discovery warns.
+If `affectsRunData = true` but the module exposes neither patch nor manual lifecycle, discovery warns.
 
 ---
 
@@ -269,8 +259,8 @@ Use this order:
 1. Identify patch-shaped writes
 2. Move those into `definition.patchPlan`
 3. Keep procedural leftovers in manual `apply/revert`
-4. Add optional `definition.mutationMode`
-5. Let discovery warn if the declared mode drifts from the actual exports
+4. Let discovery validate the inferred lifecycle against the actual exports
+5. Keep `affectsRunData` only for modules whose lifecycle changes require run-data rebuilds
 
 Do not try to eliminate manual mode first. Shrink it first.
 
