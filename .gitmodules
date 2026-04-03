@@ -18,11 +18,11 @@
 	path = Submodules/adamant-RunDirectorGodPool
 	url = https://github.com/h2pack-rundirector/RunDirectorGodPool.git
 	branch = main
-[submodule "Submodules/adamant-RunDirectorEncounters"]
-	path = Submodules/adamant-RunDirectorEncounters
-	url = https://github.com/h2pack-rundirector/RunDirectorEncounters.git
-	branch = main
 [submodule "Submodules/adamant-RunDirectorBoonBans"]
 	path = Submodules/adamant-RunDirectorBoonBans
 	url = https://github.com/h2pack-rundirector/RunDirectorBoonBans.git
+	branch = main
+[submodule "Submodules/adamant-RunDirectorBiomeControl"]
+	path = Submodules/adamant-RunDirectorBiomeControl
+	url = https://github.com/h2pack-rundirector/BiomeControl
 	branch = main
