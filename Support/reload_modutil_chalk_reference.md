@@ -486,11 +486,11 @@ For most Hades II plugin `main.lua` files in this modpack family, use this shape
 local mods = rom.mods
 mods['SGG_Modding-ENVY'].auto()
 
-local modutil = mods['SGG_Modding-ModUtil']
+modutil = mods['SGG_Modding-ModUtil']
 local reload = mods['SGG_Modding-ReLoad']
 local chalk = mods['SGG_Modding-Chalk']
 
-config = chalk.auto('config.lua')
+local config = chalk.auto('config.lua')
 
 local loader = reload.auto_single()
 
@@ -504,6 +504,11 @@ end)
 ```
 
 This is the best default unless you have a specific reason to deviate.
+
+For module files in the current stack:
+- keep `chalk`, `reload`, and raw `config` local to `main.lua`
+- `modutil`, `lib`, and `store` may be shared across the module's imported files
+- after `public.store = lib.createStore(config, public.definition)`, imported files should use `store.read(...)` / `store.write(...)`
 
 ## Guidance For Future Agents
 

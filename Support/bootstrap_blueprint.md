@@ -128,11 +128,10 @@ rom = rom
 _PLUGIN = _PLUGIN
 game = rom.game
 modutil = mods["SGG_Modding-ModUtil"]
-chalk = mods["SGG_Modding-Chalk"]
-reload = mods["SGG_Modding-ReLoad"]
+local chalk = mods["SGG_Modding-Chalk"]
+local reload = mods["SGG_Modding-ReLoad"]
 
-config = chalk.auto("config.lua")
-public.config = config
+local config = chalk.auto("config.lua")
 
 local Framework = mods["adamant-ModpackFramework"]
 
@@ -166,6 +165,7 @@ end)
 - GUI registration belongs in the coordinator, not Framework internals
 - `loader.load(init, init)` is the default
 - only split `on_ready` and `on_reload` if you have a specific one-time registration reason
+- because Core is a single thin file, keeping `chalk`, `reload`, and `config` local is preferred
 
 ## 4. Submodules
 
@@ -187,9 +187,9 @@ rom = rom
 _PLUGIN = _PLUGIN
 game = rom.game
 modutil = mods["SGG_Modding-ModUtil"]
-chalk = mods["SGG_Modding-Chalk"]
-reload = mods["SGG_Modding-ReLoad"]
-local lib = mods["adamant-ModpackLib"]
+local chalk = mods["SGG_Modding-Chalk"]
+local reload = mods["SGG_Modding-ReLoad"]
+lib = mods["adamant-ModpackLib"]
 
 local config = chalk.auto("config.lua")
 
@@ -205,7 +205,7 @@ public.definition = {
 }
 
 public.store = lib.createStore(config, public.definition)
-internal.store = public.store
+store = public.store
 
 local function syncExports()
     public.DrawTab = internal.DrawTab
@@ -224,8 +224,8 @@ local function init()
 
     syncExports()
 
-    if lib.isEnabled(public.store, public.definition.modpack) then
-        lib.applyDefinition(public.definition, public.store)
+    if lib.isEnabled(store, public.definition.modpack) then
+        lib.applyDefinition(public.definition, store)
     end
 
     if public.definition.affectsRunData and not lib.isCoordinated(public.definition.modpack) then
@@ -245,6 +245,11 @@ end)
 - `loader.load(init, init)` is the default submodule shape
 - this keeps dev and shipped behavior aligned
 - only use split `on_ready` / `on_reload` when the split is intentional and justified
+- `config`, `chalk`, and `reload` stay local to `main.lua`
+- `public.store = lib.createStore(config, public.definition)` is the boundary where raw config stops
+- imported files should read persisted state through `store.read(...)` / `store.write(...)`
+- `modutil`, `lib`, and `store` may be shared across module files
+- `internal` is for module-local helpers and cached data, not dependency forwarding
 
 ## When To Split `on_ready` and `on_reload`
 

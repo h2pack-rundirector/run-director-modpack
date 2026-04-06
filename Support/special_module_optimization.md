@@ -18,6 +18,31 @@ they do not allocate.
 
 ---
 
+## Current contract assumptions
+
+This document assumes the live special-module contract:
+
+- `config`, `chalk`, and `reload` stay local to `main.lua`
+- `public.store = lib.createStore(config, public.definition)` is the boundary where raw config stops
+- `store = public.store` may be shared across module files
+- special-module draw functions receive `uiState`, not raw config
+- runtime/gameplay code reads persisted state through `store.read(...)`
+- Lib/Framework own `uiState` commit timing through `runUiStatePass(...)` and transactional `commitUiState(...)`
+
+So when this document says "runtime reads persisted state", read that as:
+
+```lua
+local enabled = store.read("SomeFlag")
+```
+
+not:
+
+```lua
+local enabled = config.SomeFlag
+```
+
+---
+
 ## Per-frame render checklist
 
 Audit every line in `DrawQuickContent`, the full-tab draw function, and any helpers they call.
@@ -120,61 +145,65 @@ Cache per-field on the field descriptor itself (`field._lastStepperStr`, `field.
 
 ---
 
-## Debug-gate the bypass detection helpers
+## Let Lib/Framework own `uiState` commit timing
 
-`lib.captureSpecialConfigSnapshot` and `lib.warnIfSpecialConfigBypassedState` iterate the full
-`stateSchema` every frame when called unconditionally. Gate them behind the debug flag:
+Do not hand-roll flush logic inside a special module.
 
-```lua
--- In DrawQuickContent / full-tab draw (coordinated path):
-local debugEnabled = discovery.isDebugEnabled(special)
-local preDrawConfig = debugEnabled and lib.captureSpecialConfigSnapshot(special.mod.config, special.stateSchema)
-special.mod.DrawQuickContent(ui, special.mod.specialState, theme)
-if debugEnabled then WarnIfSpecialBypassedState(special, preDrawConfig) end
-FlushSpecialState(special)
+Current hosted and standalone flows already:
 
--- In standalone UI path:
-local debugEnabled = config.DebugMode == true
-local beforeDraw = debugEnabled and lib.captureSpecialConfigSnapshot(config, public.definition.stateSchema)
-public.DrawQuickContent(rom.ImGui, public.specialState, nil)
-if debugEnabled then warnIfStandaloneBypassedState(beforeDraw) end
-```
+- render from `uiState.view`
+- apply edits through `uiState.set/update/toggle`
+- commit through `runUiStatePass(...)`
+- use transactional `commitUiState(...)` for `affectsRunData` modules
 
-Both helpers are no-ops in production builds. Do not call them unconditionally.
+That means modules should not do their own equivalents of:
+
+- manual `flushToConfig()` calls from draw code
+- custom "flush after draw" helpers
+- old config-snapshot bypass detectors
+
+The module's job is:
+
+- render from `uiState`
+- stage edits into `uiState`
+- let Lib/Framework own commit and rollback behavior
+
+If you add extra debug checks around draw code, make sure they are not full-schema scans running
+every frame in production.
 
 ---
 
-## specialState read contract: default to `.view`
+## `uiState` read contract: default to `.view`
 
-`specialState` exposes two read paths:
+`uiState` exposes two read paths:
 
 | Path | What it returns | Safe for tables? |
 |---|---|---|
-| `specialState.view.SomeField` | read-only proxy (throws on write) | Yes — proxy wraps nested tables too |
-| `specialState.get("SomeField")` | raw staging value | No — gives mutable reference to table fields |
+| `uiState.view.SomeField` | read-only proxy (throws on write) | Yes - proxy wraps nested tables too |
+| `uiState.get("SomeField")` | raw staging value | No - gives mutable reference to table fields |
 
-Default to `specialState.view` in draw functions. `specialState.get` is fine for scalar fields
+Default to `uiState.view` in draw functions. `uiState.get` is fine for scalar fields
 (numbers, strings, booleans) where mutating the returned value has no effect on staging, but it
 should not be the default read path for table-backed state. The proxy is the correctness
-guarantee - bypassing it should be an intentional choice, not the norm.
+guarantee; bypassing it should be an intentional choice, not the norm.
 
 ---
 
-## specialState write contract: UI writes, runtime reads
+## `uiState` write contract: UI writes, runtime reads
 
 For managed special-module state, keep the boundary strict:
 
-- UI / draw code writes through `specialState.set/update/toggle`
-- gameplay/runtime code reads persisted `config`
+- UI / draw code writes through `uiState.set/update/toggle`
+- gameplay/runtime code reads persisted state through `store.read(...)`
 - gameplay/runtime code should not write schema-backed UI state directly
 
 If you have a shared helper used by both UI and runtime code:
 
 - shared reads are fine
-- shared writes should require `specialState`
+- shared writes should require `uiState`
 
-This avoids the most important special-state failure mode: runtime code silently mutating config
-while the live UI is still rendering from `specialState`.
+This avoids the most important managed-state failure mode: runtime code silently mutating
+persisted state while the live UI is still rendering from `uiState`.
 
 If a runtime path truly needs to mutate UI-managed fields, treat that as an explicit design case,
 not a fallback behavior. Either:
@@ -212,12 +241,12 @@ This is an easy bug to introduce when converting old UI code to helper-driven st
 
 ```lua
 -- BUGGY: helper writes state, but currentBans stays stale
-local currentBans = internal.GetBanConfig(godName, specialState)
+local currentBans = internal.GetBanConfig(godName, uiState)
 if ui.Button("Ban All") then
-    internal.BanAllGodBans(godName, specialState)
+    internal.BanAllGodBans(godName, uiState)
 end
 ...
-internal.SetBanConfig(godName, currentBans, specialState) -- overwrites the helper write
+internal.SetBanConfig(godName, currentBans, uiState) -- overwrites the helper write
 ```
 
 If a button handler mutates state through a helper, refresh any local cached snapshot before
@@ -225,8 +254,8 @@ continuing the draw:
 
 ```lua
 if ui.Button("Ban All") then
-    if internal.BanAllGodBans(godName, specialState) then
-        currentBans = internal.GetBanConfig(godName, specialState)
+    if internal.BanAllGodBans(godName, uiState) then
+        currentBans = internal.GetBanConfig(godName, uiState)
     end
 end
 ```
@@ -287,7 +316,7 @@ local currentIndex = data.valueIndex[currentId] or 1
 
 ### Pre-built path tables (replaces inline table alloc on every selection)
 
-`specialState.set` takes a path table `{"Parent", "Child"}`. If you allocate this inline on
+`uiState.set` takes a path table `{"Parent", "Child"}`. If you allocate this inline on
 every user selection, a new table is created on each click. Pre-build at module load:
 
 ```lua
@@ -302,7 +331,7 @@ for _, weaponName in ipairs(weaponDrawOrder) do
 end
 
 -- In draw function:
-specialState.set(_hammerPaths[aspectKey], data.values[i])
+uiState.set(_hammerPaths[aspectKey], data.values[i])
 ```
 
 This is worthwhile when the path shape is fixed and can be known at load time. It is a second-pass
@@ -342,14 +371,14 @@ grouped special tabs.
 If a debug path is just a direct log call, do not also wrap it in:
 
 ```lua
-if config.DebugMode then
+if store.read("DebugMode") then
     Log("...")
 end
 ```
 
-when `Log(...)` already calls `lib.log(moduleId, config.DebugMode, ...)`.
+when `Log(...)` already calls `lib.log(moduleId, store.read("DebugMode") == true, ...)`.
 
-Keep explicit `if config.DebugMode then` only when it prevents real extra work:
+Keep explicit `if store.read("DebugMode") then` only when it prevents real extra work:
 
 - building joined strings
 - scanning tables just for the log
@@ -362,15 +391,13 @@ This keeps hot code cleaner and avoids redundant debug branches.
 
 ## Hash key caching
 
-`lib.validateSchema` caches `field._schemaKey` for each schema field. Hash and debug code
+`lib.validateSchema` caches `field._schemaKey` for each schema field. Hash and internal Lib debug/audit code
 should always use the cached key rather than recomputing via `table.concat`:
 
 ```lua
 -- In hash encode/decode (hash.lua uses this automatically):
 kv[special.modName .. "." .. (field._schemaKey or KeyStr(field.configKey))] = ...
 
--- In captureSpecialConfigSnapshot (lib already does this):
-snapshot[field._schemaKey or SpecialFieldKey(field.configKey)] = ...
 ```
 
 For module options (`opt._hashKey`), discovery caches `def.id .. "." .. opt.configKey` at
@@ -409,7 +436,7 @@ end
 
 Additional checks from the Run Director migration:
 
-- shared helpers may support runtime reads, but helper writes should require `specialState`
+- shared helpers may support runtime reads, but helper writes should require `uiState`
 - button handlers that call helper mutations should refresh any stale local snapshot afterward
 - moved helpers should not bind shared tables through `internal.someTable or {}`
 - grouped tabs with accordion lock should hide headers when no entry in that group can actually render
@@ -417,12 +444,13 @@ Additional checks from the Run Director migration:
 1. Read the full `DrawQuickContent` and full-tab draw function.
 2. Search for: `.. `, `or {}`, `or { `, `table.unpack(` inside loops, repeated `ui.Get*` calls,
    `tostring(` inside draw paths.
-3. Search for `captureSpecialConfigSnapshot` and `warnIfSpecialConfigBypassedState` — confirm
-   they are behind a `debugEnabled` guard.
-4. Check `specialState.get` — replace with `specialState.view` unless the field is scalar.
+3. Check for hand-rolled `flushToConfig()` / post-draw commit logic - remove it unless the module
+   has a very explicit reason to bypass standard Lib/Framework helpers.
+4. Check `uiState.get` - replace with `uiState.view` unless the field is scalar.
 5. Check dropdown logic — if there is a linear scan over `data.values`, add a `valueIndex` map.
-6. Check `specialState.set` path arguments — if inline `{ "Parent", "Child" }`, pre-build.
+6. Check `uiState.set` path arguments - if inline `{ "Parent", "Child" }`, pre-build.
 7. Check any strings derived from game state (equipped weapon, phase, selection) — add label cache.
 8. Check any `or { literal }` fallbacks or constant color tables — hoist to module scope.
+
 
 
