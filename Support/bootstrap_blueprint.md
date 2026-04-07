@@ -175,6 +175,7 @@ Submodules own:
 - module config
 - module store/uiState
 - module-local hook/bootstrap logic
+- optional module-local `customTypes`
 
 ### Preferred Pattern
 
@@ -191,6 +192,7 @@ local chalk = mods["SGG_Modding-Chalk"]
 local reload = mods["SGG_Modding-ReLoad"]
 lib = mods["adamant-ModpackLib"]
 
+local dataDefaults = import("config.lua")
 local config = chalk.auto("config.lua")
 
 MyModule_Internal = MyModule_Internal or {}
@@ -202,9 +204,15 @@ public.definition = {
     name = "My Module",
     default = false,
     affectsRunData = true,
+    storage = {
+        -- ...
+    },
+    ui = {
+        -- ...
+    },
 }
 
-public.store = lib.createStore(config, public.definition)
+public.store = lib.createStore(config, public.definition, dataDefaults)
 store = public.store
 
 local function syncExports()
@@ -246,7 +254,7 @@ end)
 - this keeps dev and shipped behavior aligned
 - only use split `on_ready` / `on_reload` when the split is intentional and justified
 - `config`, `chalk`, and `reload` stay local to `main.lua`
-- `public.store = lib.createStore(config, public.definition)` is the boundary where raw config stops
+- `import("config.lua")` + `chalk.auto("config.lua")` feed `lib.createStore(config, public.definition, dataDefaults)`; that store creation boundary is where raw config stops
 - imported files should read persisted state through `store.read(...)` / `store.write(...)`
 - `modutil`, `lib`, and `store` may be shared across module files
 - `internal` is for module-local helpers and cached data, not dependency forwarding

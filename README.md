@@ -6,7 +6,7 @@ Shell repo for the Run Director modpack. Contains the coordinator, shared Lib/Fr
 
 ```text
 run-director-modpack/
-|- adamant-ModpackRunDirectorCore/  # Coordinator: pack identity, config, profiles
+|- adamant-RunDirector_Core/        # Coordinator: pack identity, config, profiles
 |- adamant-ModpackFramework/        # Shared UI, discovery, hash, HUD
 |- adamant-ModpackLib/              # Shared utilities and module runtime
 |- Setup/                           # Scaffold and deploy helpers
@@ -23,13 +23,10 @@ python Setup/deploy/deploy_all.py
 
 ## Shared Docs
 
-The shared architecture and authoring contract live in the upstream repos:
+Use the stable repo-root entrypoints for shared docs:
 
-- [ModpackFramework COORDINATOR_GUIDE.md](https://github.com/h2-modpack/ModpackFramework/blob/main/COORDINATOR_GUIDE.md)
-- [ModpackFramework HASH_PROFILE_ABI.md](https://github.com/h2-modpack/ModpackFramework/blob/main/HASH_PROFILE_ABI.md)
-- [ModpackLib MODULE_AUTHORING.md](https://github.com/h2-modpack/ModpackLib/blob/main/MODULE_AUTHORING.md)
-- [ModpackLib API.md](https://github.com/h2-modpack/ModpackLib/blob/main/API.md)
-- [ModpackLib FIELD_TYPES.md](https://github.com/h2-modpack/ModpackLib/blob/main/FIELD_TYPES.md)
+- [ModpackFramework README.md](https://github.com/h2-modpack/adamant-ModpackFramework/blob/main/README.md)
+- [ModpackLib README.md](https://github.com/h2-modpack/adamant-ModpackLib/blob/main/README.md)
 
 This shell repo should only document pack-specific structure and composition.
 
