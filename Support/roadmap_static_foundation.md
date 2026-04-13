@@ -251,23 +251,21 @@ The remaining work is now mostly Lib follow-up, not more BoonBans cleanup.
 
 ## A. Explicit Y ownership in Lib layout/slot infrastructure
 
-This is the highest-priority remaining Lib design issue.
+Completed:
+- structured slot rendering now owns row `Y` explicitly
+- `panel` now owns row settlement explicitly
+- radio-family widgets now use the structured slot renderer
+- `verticalTabs` no longer relies on ambient `SameLine()` split flow
+- the start/end cursor settlement contract is implemented and documented
 
-Reason:
-- the force-rarity debugging proved that `SameLine()` is too implicit as the foundational mechanism for structured slot/layout systems
-- current structured layout code is explicit on `X` and implicit on `Y`
-- that mismatch is the source of brittle nested-row behavior
-
-Direction:
-- keep `SameLine()` available for simple local immediate-mode UI
-- but for Lib slot/panel/layout infrastructure, move toward explicit row baseline / `Y` ownership
-- row/slot systems should place both `X` and `Y` deterministically
-
-This is the clearest remaining foundational issue.
+Outcome:
+- `line` remains the public vertical descriptor
+- raw `y` remains internal
+- the first-pass Y-ownership work is complete and stable enough for regression testing
 
 ## B. Relative positioning support
 
-Still desired, but lower urgency than `Y` ownership.
+Still desired, but intentionally deferred until after the future `X`/`Y` unification discussion.
 
 Why it still matters:
 - current layout is still mostly absolute-pixel-based
@@ -280,20 +278,18 @@ Recommended scope:
 
 ## C. Standardized post-draw registration for special modules
 
-Current situation:
-- BoonBans still has post-draw reactions in module code:
-  - stats refresh
-  - Bridal Glow cache invalidation
-  - root-change reactions
+Completed:
+- `lib.runUiStatePass(...)` now supports:
+  - `beforeDraw(imgui, uiState, theme)`
+  - `afterDraw(imgui, uiState, theme, changed)`
+- `lib.standaloneSpecialUI(...)` forwards special-module before/after draw hooks for quick content and tab passes
+- Framework coordinator special tabs now forward the same hooks
+- BoonBans now uses:
+  - `BeforeDrawTab` for derived-text/frame refresh
+  - `AfterDrawTab` for root/filter/cache/stats reactions
 
-These are defensible, but not yet standardized.
-
-Desired Lib direction:
-- a small, explicit post-draw registration mechanism for special modules
-- enough to standardize the pattern without hiding module semantics
-
-Important constraint:
-- Lib should provide the mechanism
+Important boundary kept:
+- Lib provides the orchestration mechanism
 - modules still own the actual side-effect policy
 
 ## D. Document cache and invalidation conventions
@@ -303,17 +299,20 @@ Now that caching is part of the active design, Lib needs a clearer authoring rul
 - what invalidates those caches
 - where invalidation should live
 
-This does not necessarily need a new helper first.
-It does need a documented contract.
+Completed:
+- `lib.getCachedPreparedNode(...)` is now documented as the reusable prepared-node cache helper
+- `lib.runDerivedText(...)` documents caller-owned cache lifecycle more explicitly
+- module authoring docs now state the intended ownership split:
+  - Lib owns mechanical caches
+  - modules own semantic signatures and invalidation policy
 
 ## E. Document the leaf-widget rule
 
-The authoring guidance should explicitly state:
-- layouts may compose layouts and widgets
-- widgets should generally be treated as leaf renderers
-- custom widgets should not recursively draw full slot-based widgets unless the nested thing is truly atomic
-
-This was learned the hard way and should be made explicit.
+Completed:
+- authoring docs now state:
+  - layouts may compose layouts and widgets
+  - widgets should generally be treated as leaf renderers
+  - custom widgets should not recursively draw full slot-based widgets unless the nested thing is truly atomic
 
 ---
 
@@ -338,10 +337,8 @@ At this point:
 - the remaining work is mostly about maturing Lib around the lessons learned
 
 The main remaining Lib topics are:
-1. explicit `Y` ownership for structured layouts
-2. post-draw registration pattern
-3. relative positioning
-4. authoring/documentation around caching and leaf-widget boundaries
+1. relative positioning
+2. future `X`/`Y` symmetry discussion after real-world regression shakeout
 
 That is a much narrower and healthier scope than where this effort started.
 
@@ -354,6 +351,8 @@ That is a much narrower and healthier scope than where this effort started.
 | Dynamic rollback | Planner/runtime middle ground removed from `main` |
 | Static widget surface | `confirmButton`, enum stepper display, packed filtering, colors, active-tab binding, optional panel ID |
 | Derived text | `lib.runDerivedText(...)` added and adopted |
+| Special hooks | before/after draw hooks standardized across standalone and coordinator paths |
+| Y ownership | first-pass explicit internal row `Y` ownership completed for slots, panels, and `verticalTabs` |
 | BoonBans structure | Main tabs, domain shells, most views now declarative |
 | Selection ownership | Root/tab state moved to transient UI aliases |
 | Force tab lesson | Leaf-widget rule clarified through direct `forceRarityStatus` rendering |
