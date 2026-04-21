@@ -32,12 +32,13 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Install Lua test runtime
+      - name: Install Lua validation runtime
         if: steps.changes.outputs.changed == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y lua5.2 liblua5.2-dev luarocks
           sudo luarocks --lua-version=5.2 install luaunit
+          sudo luarocks --lua-version=5.2 install luacheck
 
       - name: Run ModpackLib tests
         if: steps.changes.outputs.changed == 'true'
@@ -49,10 +50,32 @@ jobs:
         working-directory: adamant-ModpackFramework
         run: lua5.2 tests/all.lua
 
-      - name: Run BoonBans tests
+      - name: Validate coordinator sources
         if: steps.changes.outputs.changed == 'true'
-        working-directory: Submodules/adamant-RunDirector_BoonBans
-        run: lua5.2 tests/all.lua
+        run: |
+          luacheck adamant-RunDirector_Core/src/
+          find adamant-RunDirector_Core/src -type f -name '*.lua' -print0 | xargs -0 -r -n1 luac5.2 -p
+
+      - name: Validate module sources
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          for repo in Submodules/adamant-*; do
+            if [ ! -d "$repo/src" ]; then
+              continue
+            fi
+
+            echo "=== Validating $repo ==="
+            luacheck "$repo/src/"
+            find "$repo/src" -type f -name '*.lua' -print0 | xargs -0 -r -n1 luac5.2 -p
+
+            if [ -f "$repo/tests/all.lua" ]; then
+              echo "--- Running tests for $repo ---"
+              (
+                cd "$repo"
+                lua5.2 tests/all.lua
+              )
+            fi
+          done
 
       - name: Open or update pull request
         if: steps.changes.outputs.changed == 'true'
@@ -61,7 +84,7 @@ jobs:
         run: |
           BRANCH="automation/update-submodules"
           TITLE="Update submodule pointers"
-          BODY="Automated submodule pointer update. Lua test suites passed before this PR was opened."
+          BODY="Automated submodule pointer update. Pack-wide Lua validation passed before this PR was opened."
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
