@@ -53,14 +53,19 @@ jobs:
           ORG="h2pack-rundirector"
 
           REGISTRY_MODULES=$(gh api repos/$ORG/run-director-modpack/contents/Submodules \
-            --jq '.[].name' | grep '^adamant-' | sed 's/^adamant-/h2pack-rundirector-/')
+            --jq '.[].name' | grep '^adamant-')
 
-          mapfile -t ALL_REPOS <<< "$(printf 'ModpackRunDirectorCore\n%s' "$REGISTRY_MODULES")"
+          mapfile -t ALL_REPOS <<< "$(printf 'adamant-RunDirector_Core\n%s' "$REGISTRY_MODULES")"
 
           if [ -n "$FILTER" ]; then
             IFS=',' read -ra REPOS <<< "$FILTER"
             for i in "${!REPOS[@]}"; do
               REPOS[$i]=$(echo "${REPOS[$i]}" | xargs)
+              if [ "${REPOS[$i]}" = "ModpackRunDirectorCore" ] || [ "${REPOS[$i]}" = "adamant-RunDirector_Core" ]; then
+                REPOS[$i]="adamant-RunDirector_Core"
+              elif [[ "${REPOS[$i]}" != adamant-* ]]; then
+                REPOS[$i]="adamant-${REPOS[$i]}"
+              fi
             done
           else
             REPOS=("${ALL_REPOS[@]}")
