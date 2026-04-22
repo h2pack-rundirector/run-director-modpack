@@ -49,6 +49,9 @@ jobs:
           submodules: recursive
           token: ${{ secrets.RELEASE_DISPATCH_TOKEN }}
 
+      - name: Validate platform dependency versions
+        run: python3 .github/scripts/validate_platform_versions.py
+
       - name: Install Lua validation runtime
         run: |
           sudo apt-get update
