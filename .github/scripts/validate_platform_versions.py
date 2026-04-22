@@ -102,12 +102,21 @@ def main() -> int:
         framework_version,
     )
 
-    loaded_modules: list[tuple[Path, dict]] = []
+    loaded_modules: list[tuple[str, str]] = []
     for module_path in module_paths:
         try:
             module_data = load_toml(module_path)
-            loaded_modules.append((module_path, module_data))
+            module_name = package_name(module_path, module_data)
+            module_version = package_version(module_path, module_data)
+            loaded_modules.append((module_name, module_version))
             check_dependency(errors, module_path, module_data, "adamant-ModpackLib", lib_version)
+            check_dependency(
+                errors,
+                core_path,
+                core_data,
+                module_name,
+                module_version,
+            )
         except (OSError, ValueError) as exc:
             errors.append(str(exc))
 
@@ -115,8 +124,8 @@ def main() -> int:
     print(f"  {package_name(lib_path, lib_data)} {lib_version}")
     print(f"  {package_name(framework_path, framework_data)} {framework_version}")
     print("  Run Director modules:")
-    for module_path, module_data in loaded_modules:
-        print(f"    {package_name(module_path, module_data)} {package_version(module_path, module_data)}")
+    for module_name, module_version in loaded_modules:
+        print(f"    {module_name} {module_version}")
 
     if errors:
         print("")
