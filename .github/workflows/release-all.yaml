@@ -50,7 +50,7 @@ jobs:
           token: ${{ secrets.RELEASE_DISPATCH_TOKEN }}
 
       - name: Validate platform dependency versions
-        run: python3 .github/scripts/validate_platform_versions.py
+        run: python3 Setup/validate_platform_versions.py
 
       - name: Install Lua validation runtime
         run: |

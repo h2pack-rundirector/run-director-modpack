@@ -34,7 +34,7 @@ jobs:
 
       - name: Validate platform dependency versions
         if: steps.changes.outputs.changed == 'true'
-        run: python3 .github/scripts/validate_platform_versions.py
+        run: python3 Setup/validate_platform_versions.py
 
       - name: Install Lua validation runtime
         if: steps.changes.outputs.changed == 'true'
