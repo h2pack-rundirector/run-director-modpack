@@ -33,27 +33,28 @@ What would remove it:
 - a ROM-side callback such as `mods.on_hot_reload_wave_complete(...)`
 - or another clean Lua-visible boundary after `process_file_watcher_queue()` drains
 
-## Core Is Still A Stronger Hot Reload Boundary
+## Structural Rebuilds Are Rebuild-Driven, Not Wave-Coalesced
 
-Ordinary module reloads can be handled incrementally:
+Author-facing hot reload is resilient across coordinated modules, Framework, and Core.
 
-- behavior-only changes rebuild only the module host/runtime
-- structural changes trigger a Framework rebuild
+When structural changes occur, the system responds by rerunning `Framework.init(...)` from the current published state. That rebuild happens immediately when each structural reload completes.
 
-Core is different.
+What this means in practice:
 
-Framework rebuilds currently reuse the pack bootstrap parameters cached by Core during its own initialization. That means Core code/config/bootstrap edits are not treated with the same hot-reload guarantees as ordinary modules.
+- one structural reload triggers one Framework rebuild
+- multiple structural reloads in the same watcher wave may trigger multiple Framework rebuilds
+- rebuilds are correct, but not batched into one final pass after the whole wave settles
 
 Why this exists:
 
-- Core owns pack bootstrap policy
-- Core is the single place that drives `Framework.init(...)`
-- rebuild callbacks intentionally reuse Core's last known init params
+- ReturnOfModdingBase reloads modules through an internal file-watcher queue
+- that queue drain boundary is not exposed to Lua
+- neither ROM nor ModUtil currently provides a clean "hot reload wave complete" callback
 
 What would remove it:
 
-- a broader Core hot-reload design
-- or a rebuild path that reconstructs Framework init parameters from fresh Core state instead of cached bootstrap state
+- a ROM-side callback such as `mods.on_hot_reload_wave_complete(...)`
+- or another clean Lua-visible boundary after `process_file_watcher_queue()` drains
 
 ## Private Module `internal` Usage Is Convention-Driven
 
