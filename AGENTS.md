@@ -2,20 +2,23 @@
 
 ## Validation And Trust Boundaries
 
-Prefer validating data at trust boundaries, then trusting validated internals.
+Prefer validating data at contact points, then trusting validated internals.
 
-Keep strong runtime validation where data crosses from outside our control into Lib/Framework:
-- Public module-author APIs such as `prepareDefinition`, `createStore`, `createModuleHost`, and `standaloneHost`.
-- Storage schema preparation and storage type validation.
-- Registration APIs for hooks, overlays, integrations, game-object state, coordinators, and widgets.
-- Framework/Core initialization boundaries.
-- Cross-language or external data reads from game state, config files, hash/profile input, or ROM/ModUtil APIs.
+Contact points are the only places where broad shape/type validation belongs:
+- `prepareDefinition(...)` owns module definition validation: required metadata, definition field names, stable module id/name rules, hash group hint shape, structural fingerprint inputs, and storage-schema handoff.
+- Storage preparation owns storage validation: root aliases, packed child aliases, table row aliases, storage type fields, axes, defaults, packed bit layout, and table schema shape.
+- `createStore(...)` owns config hydration validation: external config table shape, persisted values, and managed store/session construction.
+- `createModuleHost(...)`, `createModule(...)`, `tryCreateModule(...)`, `activateModuleHost(...)`, and `tryActivateModule(...)` own host lifecycle validation: host opts, callback surfaces, owner/hot-reload semantics, activation rollback, hook/integration refresh, and structural reload boundaries.
+- Registration APIs own their registries: hooks, overlays, integrations, game-object state, coordinators, widgets, and lifecycle callbacks validate inputs when registered.
+- Framework/Core initialization owns pack-level external input: coordinator config, profiles, discovered modules, runtime prerequisites, HUD/UI setup, and hash/profile boundary behavior.
+- Cross-language/external reads own their translation boundary: game state, config files, hash/profile strings, ROM APIs, ModUtil APIs, Chalk config, and user-editable data.
 
-Avoid repeating primitive type checks at internal hops after a value has already been validated or constructed by our own code. Internal Lib/Framework functions should usually trust:
-- Prepared definitions and prepared storage metadata.
-- Lib-created stores, sessions, module hosts, and table handles.
-- Lib-owned registration tables and callbacks after registration.
-- Framework discovery snapshots produced by Framework discovery.
+After a contact point validates or constructs a value, downstream Lib/Framework code should usually trust it:
+- Framework discovery should trust prepared definitions and prepared storage metadata; it should not re-validate definition ids, storage aliases, or hash group key-prefix syntax.
+- Store/session/widget/hash/profile internals should trust prepared storage nodes and alias maps; they should not repeat primitive alias/type checks unless accepting external keys or values.
+- Hook/integration/overlay dispatch should trust registered callback records; it should not re-check callback shape at every internal hop.
+- Module host internals should trust Lib-created stores, sessions, module hosts, author hosts, table handles, and prepared definitions.
+- Framework runtime/UI code should trust Framework discovery snapshots produced by Framework discovery.
 
 Distinguish optional nil-handling from defensive type-checking:
 
