@@ -37,3 +37,39 @@ Do not paper over hot-reload partial-state bugs with scattered defensive checks.
 Use LuaCATS annotations to document internal parameter types. Do not add runtime type checks only to restate annotations.
 
 When removing defensive checks, keep tests focused on the boundary that owns the invariant.
+
+## Composition And Ownership
+
+Prefer explicit dependency composition over global buses.
+
+Use persistent globals only for hot-reload-stable anchors or host-owned registries that must survive reload. Do not use them as a general dependency bus for data objects, services, helpers, or cross-file function gathering.
+
+Preferred dependency patterns:
+- Use `create(...)` for constructed data/runtime objects.
+- Use `bind(...)` when a module captures dependencies and returns a bound behavior object.
+- Use ENVY import args for small behavior files where import-time dependency capture is clearer than ceremony.
+- Pass targeted dependencies, not broad `context` or `data` blobs, unless the object is genuinely the domain object being consumed.
+
+Avoid fake objects and pure forwarding:
+- Do not return module tables whose methods only forward to another table.
+- Do not add `local module = {}` wrappers unless the file is actually modeling an object or public surface.
+- Header/public files should own public function shape and orchestration.
+- Private/support files should provide helper pieces used by that orchestration.
+
+Global/stable anchors:
+- Keep hot-reload-stable anchors for owner identity, hook/overlay lifecycle, and Lib/Framework runtime registries.
+- Do not attach ordinary module data or implementation helpers to those anchors.
+- If a module needs its own private bus, name it for that module-specific role rather than using generic `internal`.
+
+Visibility:
+- Prefer grep-visible ownership at public/API definition sites and important call sites.
+- Avoid local aliases that only redirect one or two calls.
+- Local aliases are acceptable when repeated heavily, capturing a real domain object, or improving semantic clarity.
+- Avoid fake public wrappers that only forward to another table:
+
+```lua
+-- Avoid
+function public.foo(...)
+    return private.foo(...)
+end
+```
