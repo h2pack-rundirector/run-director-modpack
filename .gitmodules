@@ -6,23 +6,23 @@
 	path = adamant-ModpackFramework
 	url = https://github.com/h2-modpack/adamant-ModpackFramework.git
 	branch = main
-[submodule "adamant-RunDirector_Modpack"]
-	path = adamant-RunDirector_Modpack
-	url = https://github.com/h2pack-rundirector/adamant-RunDirector_Modpack.git
+[submodule "adamantRunDirector-RunDirector_Modpack"]
+	path = adamantRunDirector-RunDirector_Modpack
+	url = https://github.com/h2pack-rundirector/adamantRunDirector-RunDirector_Modpack.git
 	branch = main
 [submodule "Setup"]
 	path = Setup
 	url = https://github.com/h2-modpack/Setup.git
 	branch = main
-[submodule "Submodules/adamant-RunDirector_GodPool"]
-	path = Submodules/adamant-RunDirector_GodPool
-	url = https://github.com/h2pack-rundirector/adamant-RunDirector_GodPool.git
+[submodule "Submodules/adamantRunDirector-GodPool"]
+	path = Submodules/adamantRunDirector-GodPool
+	url = https://github.com/h2pack-rundirector/adamantRunDirector-GodPool.git
 	branch = main
-[submodule "Submodules/adamant-RunDirector_BoonBans"]
-	path = Submodules/adamant-RunDirector_BoonBans
-	url = https://github.com/h2pack-rundirector/adamant-RunDirector_BoonBans.git
+[submodule "Submodules/adamantRunDirector-BoonBans"]
+	path = Submodules/adamantRunDirector-BoonBans
+	url = https://github.com/h2pack-rundirector/adamantRunDirector-BoonBans.git
 	branch = main
-[submodule "Submodules/adamant-RunDirector_BiomeControl"]
-	path = Submodules/adamant-RunDirector_BiomeControl
-	url = https://github.com/h2pack-rundirector/adamant-RunDirector_BiomeControl.git
+[submodule "Submodules/adamantRunDirector-BiomeControl"]
+	path = Submodules/adamantRunDirector-BiomeControl
+	url = https://github.com/h2pack-rundirector/adamantRunDirector-BiomeControl.git
 	branch = main

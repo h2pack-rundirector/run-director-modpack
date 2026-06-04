@@ -42,9 +42,9 @@ jobs:
         run: |
           python3 Setup/github/release_all.py \
             --org "h2pack-rundirector" \
-            --namespace "adamant" \
+            --namespace "adamantRunDirector" \
             --pack-pascal "RunDirector" \
-            --core-repo "adamant-RunDirector_Core" \
+            --core-repo "adamantRunDirector-RunDirector_Modpack" \
             --tag "$TAG" \
             --child-dry-run "$DRY_RUN" \
             --targets "$FILTER" \
@@ -71,14 +71,15 @@ jobs:
       - name: Validate coordinator sources
         run: |
           (
-            cd adamant-RunDirector_Core
+            cd adamantRunDirector-RunDirector_Modpack
             luacheck src/
             find src -type f -name '*.lua' -print0 | xargs -0 -r -n1 luac5.2 -p
           )
 
       - name: Validate module sources
         run: |
-          for repo in Submodules/adamant-RunDirector_*; do
+          shopt -s nullglob
+          for repo in Submodules/adamantRunDirector-*; do
             if [ ! -d "$repo/src" ]; then
               continue
             fi
@@ -105,9 +106,9 @@ jobs:
         run: |
           python3 Setup/github/release_all.py \
             --org "h2pack-rundirector" \
-            --namespace "adamant" \
+            --namespace "adamantRunDirector" \
             --pack-pascal "RunDirector" \
-            --core-repo "adamant-RunDirector_Core" \
+            --core-repo "adamantRunDirector-RunDirector_Modpack" \
             --tag "$TAG" \
             --child-dry-run "$DRY_RUN" \
             --targets "$FILTER"
