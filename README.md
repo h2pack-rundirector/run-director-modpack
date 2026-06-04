@@ -18,7 +18,7 @@ run-director-modpack/
 
 ```bash
 git clone --recurse-submodules https://github.com/h2pack-rundirector/run-director-modpack.git
-python ModpackTools/deploy/deploy_all.py
+python ModpackTools/local_deploy/deploy_all.py
 ```
 
 ## Shared Docs
