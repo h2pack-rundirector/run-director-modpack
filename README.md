@@ -6,7 +6,7 @@ Shell repo for the Run Director modpack. Contains the coordinator, shared Lib/Fr
 
 ```text
 run-director-modpack/
-|- adamant-RunDirector_Core/        # Coordinator: pack identity, config, profiles
+|- adamant-RunDirector_Modpack/        # Coordinator: pack identity, config, profiles
 |- adamant-ModpackFramework/        # Shared UI, discovery, hash, HUD
 |- adamant-ModpackLib/              # Shared utilities and module runtime
 |- Setup/                           # Scaffold and deploy helpers

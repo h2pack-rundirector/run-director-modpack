@@ -6,9 +6,9 @@
 	path = adamant-ModpackFramework
 	url = https://github.com/h2-modpack/adamant-ModpackFramework.git
 	branch = main
-[submodule "adamant-RunDirector_Core"]
-	path = adamant-RunDirector_Core
-	url = https://github.com/h2pack-rundirector/adamant-RunDirector_Core.git
+[submodule "adamant-RunDirector_Modpack"]
+	path = adamant-RunDirector_Modpack
+	url = https://github.com/h2pack-rundirector/adamant-RunDirector_Modpack.git
 	branch = main
 [submodule "Setup"]
 	path = Setup
