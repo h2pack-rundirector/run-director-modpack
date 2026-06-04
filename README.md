@@ -1,6 +1,6 @@
 # Run Director Modpack
 
-Shell repo for the Run Director modpack. Contains the coordinator, shared Lib/Framework submodules, setup helpers, and the game-module submodules for this pack.
+Shell repo for the Run Director modpack. Contains the coordinator, shared Lib/Framework submodules, pack maintenance tools, and the game-module submodules for this pack.
 
 ## Structure
 
@@ -9,16 +9,16 @@ run-director-modpack/
 |- adamantRunDirector-RunDirector_Modpack/        # Coordinator: pack identity, config, profiles
 |- adamant-ModpackFramework/        # Shared UI, discovery, hash, HUD
 |- adamant-ModpackLib/              # Shared utilities and module runtime
-|- Setup/                           # Scaffold and deploy helpers
+|- ModpackTools/                    # Scaffold and deploy helpers
 |- Submodules/                      # Game modules (one repo each)
 '- Support/                         # Internal notes for this shell repo
 ```
 
-## Setup
+## Local Development
 
 ```bash
 git clone --recurse-submodules https://github.com/h2pack-rundirector/run-director-modpack.git
-python Setup/deploy/deploy_all.py
+python ModpackTools/deploy/deploy_all.py
 ```
 
 ## Shared Docs

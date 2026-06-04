@@ -40,7 +40,7 @@ jobs:
           DRY_RUN: ${{ inputs.is-dry-run }}
           FILTER: ${{ inputs.modules }}
         run: |
-          python3 Setup/github/release_all.py \
+          python3 ModpackTools/github/release_all.py \
             --org "h2pack-rundirector" \
             --team "adamantRunDirector" \
             --core-repo "adamantRunDirector-RunDirector_Modpack" \
@@ -50,7 +50,7 @@ jobs:
             --plan-only
 
       - name: Validate platform dependency versions
-        run: python3 Setup/validate_platform_versions.py
+        run: python3 ModpackTools/validate_platform_versions.py
 
       - name: Install Lua validation runtime
         run: |
@@ -103,7 +103,7 @@ jobs:
           DRY_RUN: ${{ inputs.is-dry-run }}
           FILTER: ${{ inputs.modules }}
         run: |
-          python3 Setup/github/release_all.py \
+          python3 ModpackTools/github/release_all.py \
             --org "h2pack-rundirector" \
             --team "adamantRunDirector" \
             --core-repo "adamantRunDirector-RunDirector_Modpack" \
