@@ -43,7 +43,6 @@ jobs:
           python3 Setup/github/release_all.py \
             --org "h2pack-rundirector" \
             --team "adamantRunDirector" \
-            --legacy-package-prefix "RunDirector" \
             --core-repo "adamantRunDirector-RunDirector_Modpack" \
             --tag "$TAG" \
             --child-dry-run "$DRY_RUN" \
@@ -107,7 +106,6 @@ jobs:
           python3 Setup/github/release_all.py \
             --org "h2pack-rundirector" \
             --team "adamantRunDirector" \
-            --legacy-package-prefix "RunDirector" \
             --core-repo "adamantRunDirector-RunDirector_Modpack" \
             --tag "$TAG" \
             --child-dry-run "$DRY_RUN" \
