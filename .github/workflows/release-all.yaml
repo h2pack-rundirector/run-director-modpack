@@ -13,6 +13,10 @@ on:
       modules:
         description: "Comma-separated repo names to release (blank = all)"
         required: false
+      include-boon-bans-private-padding:
+        description: "Include Boon Bans private padding in the BoonBans child build"
+        type: boolean
+        default: false
 
 jobs:
   release:
@@ -39,6 +43,7 @@ jobs:
           TAG: ${{ inputs.tag }}
           DRY_RUN: ${{ inputs.is-dry-run }}
           FILTER: ${{ inputs.modules }}
+          INCLUDE_BOON_BANS_PRIVATE_PADDING: ${{ inputs.include-boon-bans-private-padding }}
         run: |
           python3 ModpackTools/github/release_all.py \
             --org "h2pack-rundirector" \
@@ -47,6 +52,7 @@ jobs:
             --tag "$TAG" \
             --child-dry-run "$DRY_RUN" \
             --targets "$FILTER" \
+            --repo-field "adamantRunDirector-BoonBans:include-private-padding=$INCLUDE_BOON_BANS_PRIVATE_PADDING" \
             --plan-only
 
       - name: Validate platform dependency versions
@@ -102,6 +108,7 @@ jobs:
           TAG: ${{ inputs.tag }}
           DRY_RUN: ${{ inputs.is-dry-run }}
           FILTER: ${{ inputs.modules }}
+          INCLUDE_BOON_BANS_PRIVATE_PADDING: ${{ inputs.include-boon-bans-private-padding }}
         run: |
           python3 ModpackTools/github/release_all.py \
             --org "h2pack-rundirector" \
@@ -109,4 +116,5 @@ jobs:
             --core-repo "adamantRunDirector-RunDirector_Modpack" \
             --tag "$TAG" \
             --child-dry-run "$DRY_RUN" \
-            --targets "$FILTER"
+            --targets "$FILTER" \
+            --repo-field "adamantRunDirector-BoonBans:include-private-padding=$INCLUDE_BOON_BANS_PRIVATE_PADDING"
