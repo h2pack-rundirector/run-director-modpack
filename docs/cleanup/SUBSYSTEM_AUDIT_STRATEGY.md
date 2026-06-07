@@ -19,20 +19,21 @@ area after the recent API and module migrations.
 | Lib status lane: declarations and runtime/UI adapters | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-status-lane.md`. Status shape is coherent; focused declaration validation tests are now covered. |
 | Lib actions, reset, and commit lifecycle | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-actions-reset-commit-lifecycle.md`. Ordering is coherent and tested. Dead action-buffer surface, unused controls DI, best-effort side-effect docs, duplicated commit-success tail, and fallback draw lifecycle sequencing are cleaned up. |
 | Lib cache and shared | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-cache-and-shared.md`. Cache is cohesive and earns its current-run-only surface. Shared-data install atomicity is fixed, shared event emission is explicit through `runtime.shared.emit(...)` and `ui.shared.emit(...)`, draw-staged emit validation happens before buffering, UI/runtime emit return contracts are documented, and immediate shared-data publication timing is documented. |
-| Lib controls | Pending | Pending | Audit compiler, refs, draw dispatch, private storage/action lowering, and control template support. |
+| Lib controls | Done | Done | See `docs/cleanup/audits/2026-06-07-lib-controls.md`. Controls are cohesive and earn their current surface. Prepare-return validation, UI-only draw render targets, and docs/diagnostic residue are cleaned up. |
 | Lib coordinator and definitions | Pending | Pending | Audit coordinator registry, definition preparation, and internal declaration merging. |
 | Lib runtime capability installers: hooks, overlays, mutations | Pending | Pending | Audit after state/controls so callback/data surfaces are clear. |
 | Lib widgets and UI draw | Pending | Pending | Audit widget helpers, widget surfaces, nav, UI draw, and control draw integration. |
 | Lib fallback UI | Pending | Pending | Audit fallback menu/HUD behavior and framework fallback registration. |
 | Lib managed module bootstrap | Pending | Pending | Audit managed module record, activation, lifecycle, reset, commit, reload, and UI phase orchestration. |
 | Lib public surfaces | Pending | Pending | Audit `createModule`, framework runtime bridge, and exported author/framework APIs last. |
-| Cross-cutting `phaseGate` inventory | In progress | Pending | Track consumers during each subsystem audit; do focused cleanup only after state/status/controls/widgets are understood. |
+| Cross-cutting `phaseGate` inventory | Done | Planned | See `docs/cleanup/audits/2026-06-07-lib-phase-gate-removal-plan.md`. The plan retires production phase guards, keeps callback-scope as the author contract, and preserves contact-point/lifecycle validation. |
 | Framework | Pending | Pending | Start after Lib pass, using the same low-dependency to high-dependency order. |
 | Module repos | Pending | Pending | Start after infrastructure pass; audit data, logic, UI, then main composition. |
 
 ## Recommended Next
 
-Next step: **controls audit**.
+Next step: **phaseGate removal**, if we want to act on the plan now. Otherwise
+resume with **coordinator and definitions audit**.
 
 Reason:
 
@@ -53,13 +54,20 @@ Reason:
 - Draw-staged shared emits validate before entering the pending intent buffer.
 - Shared emit return contracts are explicit: runtime returns delivered listener count, UI returns staged success only.
 - Shared-data write timing is documented as immediate publication, not staged config writing.
+- The focused controls audit is complete.
+- Controls cleanup is complete.
+- The phaseGate blast-radius plan is written.
 
 Suggested choices:
 
-1. Next subsystem audit:
-   - controls
+1. Focused cleanup:
+   - phaseGate removal
 
-Keep `phaseGate` as an inventory item during cleanup and future audits. Do not delete it globally until controls, widgets, cache/shared cleanup, and managed module draw orchestration have all been checked.
+2. Next subsystem audit:
+   - coordinator and definitions
+
+The phaseGate plan should be implemented as a focused cleanup, not opportunistic
+edits during unrelated audits.
 
 ## Audit Order
 
