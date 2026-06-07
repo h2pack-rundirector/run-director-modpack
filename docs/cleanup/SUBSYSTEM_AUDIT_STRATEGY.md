@@ -26,14 +26,13 @@ area after the recent API and module migrations.
 | Lib fallback UI | Pending | Pending | Audit fallback menu/HUD behavior and framework fallback registration. |
 | Lib managed module bootstrap | Pending | Pending | Audit managed module record, activation, lifecycle, reset, commit, reload, and UI phase orchestration. |
 | Lib public surfaces | Pending | Pending | Audit `createModule`, framework runtime bridge, and exported author/framework APIs last. |
-| Cross-cutting `phaseGate` inventory | Done | Planned | See `docs/cleanup/audits/2026-06-07-lib-phase-gate-removal-plan.md`. The plan retires production phase guards, keeps callback-scope as the author contract, and preserves contact-point/lifecycle validation. |
+| Cross-cutting `phaseGate` inventory | Done | Done | See `docs/cleanup/audits/2026-06-07-lib-phase-gate-removal-plan.md`. Production phase guards were retired; callback scope is now the author contract, and contact-point/lifecycle validation remains. |
 | Framework | Pending | Pending | Start after Lib pass, using the same low-dependency to high-dependency order. |
 | Module repos | Pending | Pending | Start after infrastructure pass; audit data, logic, UI, then main composition. |
 
 ## Recommended Next
 
-Next step: **phaseGate removal**, if we want to act on the plan now. Otherwise
-resume with **coordinator and definitions audit**.
+Next step: **coordinator and definitions audit**.
 
 Reason:
 
@@ -57,17 +56,12 @@ Reason:
 - The focused controls audit is complete.
 - Controls cleanup is complete.
 - The phaseGate blast-radius plan is written.
+- PhaseGate removal is complete.
 
 Suggested choices:
 
-1. Focused cleanup:
-   - phaseGate removal
-
-2. Next subsystem audit:
+1. Next subsystem audit:
    - coordinator and definitions
-
-The phaseGate plan should be implemented as a focused cleanup, not opportunistic
-edits during unrelated audits.
 
 ## Audit Order
 
