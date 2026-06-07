@@ -1,67 +1,12 @@
 # Subsystem Audit Strategy
 
-This cleanup phase audits first and edits second. Each subsystem should produce a
-short finding document before code changes are selected. The goal is not to find
-things to delete; it is to decide whether each subsystem still earns its surface
-area after the recent API and module migrations.
+This cleanup phase audits first and edits second. Each subsystem should produce
+a short finding document before code changes are selected. The goal is not to
+find things to delete; it is to decide whether each subsystem still earns its
+surface area after the recent API and module migrations.
 
-## Progress Snapshot
-
-| Area | Audit Status | Cleanup Status | Notes |
-| --- | --- | --- | --- |
-| Lib bootstrap primitives: logging, registry, module registry, system scope, game deps, values | Done | Done for identified findings | See `docs/cleanup/audits/2026-06-06-lib-bootstrap-primitives.md`. Logging policy drift was fixed and policy coverage now scans `src/core` recursively. |
-| Lib storage core: types, packed, fields, table, schema, alias access | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-storage-core.md` and `docs/cleanup/audits/2026-06-06-lib-storage-and-hashing.md`. Removed unused hash-packing metadata while keeping explicit `packedInt` behavior. |
-| Lib hashing | Done | Done | Audited with storage because hashing is a Framework-facing projection over storage primitives. Best-effort hash import policy is documented and tested. See `docs/cleanup/audits/2026-06-06-lib-storage-and-hashing.md`. |
-| Framework hash/profile boundary | Done | Done for identified findings | Covered with the storage/hash audit because Framework profile hashing consumes Lib storage hash primitives. Added table round-trip coverage and documented best-effort profile import: malformed loose segments, unknown modules, and unknown known-module keys are ignored, unsupported versions reject, and invalid known values rollback. |
-| Lib module state, status, and actions overview | Done | Split into focused passes | See `docs/cleanup/audits/2026-06-06-lib-module-state-status-actions.md`. Broad shape is coherent; focused passes are tracking state backends/refs, status lane, then actions/reset/commit lifecycle. |
-| Lib state backends and refs: persistent state, staged state, storage refs | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-state-backends-and-refs.md`. Backend direction is coherent. Ref adapter option validation, `stagedState.view` removal, and committed-root adapter cleanup are complete. |
-| Lib data front end: `module.data.define`, `runtime.data`, `ui.data` | Done | No cleanup selected | See `docs/cleanup/audits/2026-06-06-lib-data-front-end.md`. Data front-end adapters are intentionally thin over storage refs/backends. |
-| Lib status lane: declarations and runtime/UI adapters | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-status-lane.md`. Status shape is coherent; focused declaration validation tests are now covered. |
-| Lib actions, reset, and commit lifecycle | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-actions-reset-commit-lifecycle.md`. Ordering is coherent and tested. Dead action-buffer surface, unused controls DI, best-effort side-effect docs, duplicated commit-success tail, and fallback draw lifecycle sequencing are cleaned up. |
-| Lib cache and shared | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-cache-and-shared.md`. Cache is cohesive and earns its current-run-only surface. Shared-data install atomicity is fixed, shared event emission is explicit through `runtime.shared.emit(...)` and `ui.shared.emit(...)`, draw-staged emit validation happens before buffering, UI/runtime emit return contracts are documented, and immediate shared-data publication timing is documented. |
-| Lib controls | Done | Done | See `docs/cleanup/audits/2026-06-07-lib-controls.md`. Controls are cohesive and earn their current surface. Prepare-return validation, UI-only draw render targets, and docs/diagnostic residue are cleaned up. |
-| Lib coordinator and definitions | Pending | Pending | Audit coordinator registry, definition preparation, and internal declaration merging. |
-| Lib runtime capability installers: hooks, overlays, mutations | Pending | Pending | Audit after state/controls so callback/data surfaces are clear. |
-| Lib widgets and UI draw | Pending | Pending | Audit widget helpers, widget surfaces, nav, UI draw, and control draw integration. |
-| Lib fallback UI | Pending | Pending | Audit fallback menu/HUD behavior and framework fallback registration. |
-| Lib managed module bootstrap | Pending | Pending | Audit managed module record, activation, lifecycle, reset, commit, reload, and UI phase orchestration. |
-| Lib public surfaces | Pending | Pending | Audit `createModule`, framework runtime bridge, and exported author/framework APIs last. |
-| Cross-cutting `phaseGate` inventory | Done | Done | See `docs/cleanup/audits/2026-06-07-lib-phase-gate-removal-plan.md`. Production phase guards were retired; callback scope is now the author contract, and contact-point/lifecycle validation remains. |
-| Framework | Pending | Pending | Start after Lib pass, using the same low-dependency to high-dependency order. |
-| Module repos | Pending | Pending | Start after infrastructure pass; audit data, logic, UI, then main composition. |
-
-## Recommended Next
-
-Next step: **coordinator and definitions audit**.
-
-Reason:
-
-- The focused backend/ref audit is complete and did not find an architectural fault.
-- The clearly safe backend cleanups are done: `storage_ref_adapter.create(...)` option validation and `stagedState.view` removal.
-- The committed-root adapter cleanup is complete.
-- The focused standard data front-end audit is complete and found no cleanup candidate.
-- The focused status-lane audit is complete and found no architecture issue.
-- Focused status declaration validation tests are complete.
-- The focused actions/reset/commit lifecycle audit is complete.
-- Safe action lifecycle cleanup is complete.
-- The careful action lifecycle cleanup is complete.
-- Framework fallback UI now uses the live module draw-and-commit lifecycle entry point.
-- The focused cache/shared audit is complete.
-- Cache needs no cleanup.
-- Shared-data install atomicity is fixed and covered by regression test.
-- Shared event emission lanes are standardized: runtime emits through `runtime.shared.emit(...)`, draw queues through `ui.shared.emit(...)`, and old host/action emit shortcuts are removed.
-- Draw-staged shared emits validate before entering the pending intent buffer.
-- Shared emit return contracts are explicit: runtime returns delivered listener count, UI returns staged success only.
-- Shared-data write timing is documented as immediate publication, not staged config writing.
-- The focused controls audit is complete.
-- Controls cleanup is complete.
-- The phaseGate blast-radius plan is written.
-- PhaseGate removal is complete.
-
-Suggested choices:
-
-1. Next subsystem audit:
-   - coordinator and definitions
+Progress tracking lives in [README.md](README.md). This file is the reusable
+rubric and template.
 
 ## Audit Order
 
@@ -268,18 +213,3 @@ Every finding gets one rating:
 
 - <Question>
 ```
-
-## Initial Traversal
-
-Start with Lib composition and low-dependency subsystems:
-
-1. `adamant-ModpackLib/src/core/init.lua`
-2. `adamant-ModpackLib/src/core/*/00_init.lua`
-3. low-level utilities: logging, values, game deps
-4. storage/schema/hash helpers
-5. module state lanes: data, status, actions
-6. capabilities: cache, shared, hooks, mutations, overlays, widgets, controls
-7. module bootstrap and activation
-8. Framework runtime bridge
-
-Then repeat the same pattern in Framework, then module repos.
