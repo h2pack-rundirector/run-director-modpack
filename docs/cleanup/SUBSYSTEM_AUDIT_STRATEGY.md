@@ -18,7 +18,7 @@ area after the recent API and module migrations.
 | Lib data front end: `module.data.define`, `runtime.data`, `ui.data` | Done | No cleanup selected | See `docs/cleanup/audits/2026-06-06-lib-data-front-end.md`. Data front-end adapters are intentionally thin over storage refs/backends. |
 | Lib status lane: declarations and runtime/UI adapters | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-status-lane.md`. Status shape is coherent; focused declaration validation tests are now covered. |
 | Lib actions, reset, and commit lifecycle | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-actions-reset-commit-lifecycle.md`. Ordering is coherent and tested. Dead action-buffer surface, unused controls DI, best-effort side-effect docs, duplicated commit-success tail, and fallback draw lifecycle sequencing are cleaned up. |
-| Lib cache and shared | Pending | Pending | Audit current-run cache, shared data, shared events, and adapters. |
+| Lib cache and shared | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-cache-and-shared.md`. Cache is cohesive and earns its current-run-only surface. Shared-data install atomicity is fixed, shared event emission is explicit through `runtime.shared.emit(...)` and `ui.shared.emit(...)`, draw-staged emit validation happens before buffering, UI/runtime emit return contracts are documented, and immediate shared-data publication timing is documented. |
 | Lib controls | Pending | Pending | Audit compiler, refs, draw dispatch, private storage/action lowering, and control template support. |
 | Lib coordinator and definitions | Pending | Pending | Audit coordinator registry, definition preparation, and internal declaration merging. |
 | Lib runtime capability installers: hooks, overlays, mutations | Pending | Pending | Audit after state/controls so callback/data surfaces are clear. |
@@ -32,7 +32,7 @@ area after the recent API and module migrations.
 
 ## Recommended Next
 
-Next step: **audit cache/shared**.
+Next step: **controls audit**.
 
 Reason:
 
@@ -46,13 +46,20 @@ Reason:
 - Safe action lifecycle cleanup is complete.
 - The careful action lifecycle cleanup is complete.
 - Framework fallback UI now uses the live module draw-and-commit lifecycle entry point.
+- The focused cache/shared audit is complete.
+- Cache needs no cleanup.
+- Shared-data install atomicity is fixed and covered by regression test.
+- Shared event emission lanes are standardized: runtime emits through `runtime.shared.emit(...)`, draw queues through `ui.shared.emit(...)`, and old host/action emit shortcuts are removed.
+- Draw-staged shared emits validate before entering the pending intent buffer.
+- Shared emit return contracts are explicit: runtime returns delivered listener count, UI returns staged success only.
+- Shared-data write timing is documented as immediate publication, not staged config writing.
 
 Suggested choices:
 
 1. Next subsystem audit:
-   - cache and shared data/events
+   - controls
 
-Keep `phaseGate` as an inventory item during this audit. Do not delete it globally until state refs, controls, widgets, cache/shared, and managed module draw orchestration have all been checked.
+Keep `phaseGate` as an inventory item during cleanup and future audits. Do not delete it globally until controls, widgets, cache/shared cleanup, and managed module draw orchestration have all been checked.
 
 ## Audit Order
 

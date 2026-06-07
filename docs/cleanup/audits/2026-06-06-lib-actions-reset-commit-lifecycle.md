@@ -8,7 +8,7 @@ Actions/reset/commit lifecycle owns draw-time UI intent, module-wide reset stagi
 
 - Author:
   - `module.actions.define(...)`
-  - `ui.actions.get/trigger/emit`
+  - `ui.actions.get/trigger`
   - draw action refs: `stage/read/clear/has`
   - `ui.resetAll(opts?)`
   - `module.onCommit(function(host, runtime, commit) ...)`
@@ -40,14 +40,14 @@ Actions/reset/commit lifecycle owns draw-time UI intent, module-wide reset stagi
 - Owns:
   - one-commit public action slots.
   - one-commit internal action slots.
-  - one-commit pending shared events staged by `ui.actions.emit(...)`.
+  - one-commit pending shared events staged by `ui.shared.emit(...)`.
 - Reads:
   - staged action snapshots for commit observers.
   - persistent/staged state dirtiness and mutation effective state.
 - Writes:
   - action handlers may write `runtime.status`.
   - `ui.resetAll` stages UI-owned reset immediately and queues internal status reset.
-  - shared event flush calls `host.shared.emit(...)` after action handlers.
+  - shared event flush calls the internal shared emitter after action handlers.
 
 ## Lifecycle
 
@@ -56,7 +56,7 @@ Actions/reset/commit lifecycle owns draw-time UI intent, module-wide reset stagi
   - Lib internal actions are injected as private `_` keys.
   - action execution order is deterministic by sorted key order after internal action injection.
 - UI draw:
-  - `ui.actions.get(...):stage/clear` and `ui.actions.trigger/emit` require draw phase.
+  - `ui.actions.get(...):stage/clear` and `ui.actions.trigger` require draw phase.
   - refs can be read outside draw, but mutation methods remain gated.
   - `ui.resetAll(...)` requires draw phase.
 - Commit:
@@ -157,11 +157,11 @@ Actions/reset/commit lifecycle owns draw-time UI intent, module-wide reset stagi
 
 - Rating: leave alone for now
 - Evidence:
-  - `ui.actions.emit(...)` stores pending shared events in `action_buffer.lua`.
+  - `ui.shared.emit(...)` stores pending shared events in `action_buffer.lua`.
   - `actionBuffer.hasAny()` includes public actions, internal actions, and pending events so emit-only commits still run.
   - tests cover emit-only commits.
 - Impact:
-  - The file name is narrower than the behavior, but the public surface intentionally groups UI commit intent under `ui.actions`.
+  - The file name is narrower than the behavior, but the buffer now represents broader draw commit intent.
   - Splitting shared events out before the shared subsystem audit would add churn without a clearer owner yet.
 - Recommendation:
   - Leave the behavior in place.
