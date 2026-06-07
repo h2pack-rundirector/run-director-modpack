@@ -13,7 +13,11 @@ area after the recent API and module migrations.
 | Lib storage core: types, packed, fields, table, schema, alias access | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-storage-core.md` and `docs/cleanup/audits/2026-06-06-lib-storage-and-hashing.md`. Removed unused hash-packing metadata while keeping explicit `packedInt` behavior. |
 | Lib hashing | Done | Done | Audited with storage because hashing is a Framework-facing projection over storage primitives. Best-effort hash import policy is documented and tested. See `docs/cleanup/audits/2026-06-06-lib-storage-and-hashing.md`. |
 | Framework hash/profile boundary | Done | Done for identified findings | Covered with the storage/hash audit because Framework profile hashing consumes Lib storage hash primitives. Added table round-trip coverage and documented best-effort profile import: malformed loose segments, unknown modules, and unknown known-module keys are ignored, unsupported versions reject, and invalid known values rollback. |
-| Lib module state and status: persistent, staged, status, actions, storage refs | Top-level audit done; focused passes pending | Pending | See `docs/cleanup/audits/2026-06-06-lib-module-state-status-actions.md`. Broad shape is coherent, but cleanup should split into state backends/refs, status lane, then actions/reset/commit lifecycle. |
+| Lib module state, status, and actions overview | Done | Split into focused passes | See `docs/cleanup/audits/2026-06-06-lib-module-state-status-actions.md`. Broad shape is coherent; focused passes are tracking state backends/refs, status lane, then actions/reset/commit lifecycle. |
+| Lib state backends and refs: persistent state, staged state, storage refs | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-state-backends-and-refs.md`. Backend direction is coherent. Ref adapter option validation, `stagedState.view` removal, and committed-root adapter cleanup are complete. |
+| Lib data front end: `module.data.define`, `runtime.data`, `ui.data` | Done | No cleanup selected | See `docs/cleanup/audits/2026-06-06-lib-data-front-end.md`. Data front-end adapters are intentionally thin over storage refs/backends. |
+| Lib status lane: declarations and runtime/UI adapters | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-status-lane.md`. Status shape is coherent; focused declaration validation tests are now covered. |
+| Lib actions, reset, and commit lifecycle | Done | Done | See `docs/cleanup/audits/2026-06-06-lib-actions-reset-commit-lifecycle.md`. Ordering is coherent and tested. Dead action-buffer surface, unused controls DI, best-effort side-effect docs, duplicated commit-success tail, and fallback draw lifecycle sequencing are cleaned up. |
 | Lib cache and shared | Pending | Pending | Audit current-run cache, shared data, shared events, and adapters. |
 | Lib controls | Pending | Pending | Audit compiler, refs, draw dispatch, private storage/action lowering, and control template support. |
 | Lib coordinator and definitions | Pending | Pending | Audit coordinator registry, definition preparation, and internal declaration merging. |
@@ -28,23 +32,25 @@ area after the recent API and module migrations.
 
 ## Recommended Next
 
-Next audit: **focused Lib state backends and refs pass**.
+Next step: **audit cache/shared**.
 
 Reason:
 
-- The broad module-state/status/actions audit is complete and found the area too large for one cleanup patch.
-- `persistent_state`, `staged_state`, and `storage_ref_adapter` are the lowest-level remaining consumers of prepared storage schemas.
-- Status, controls, widgets, and managed module lifecycle all depend on the exact state-ref behavior, so this pass should happen before action/status or phase-gate cleanup.
+- The focused backend/ref audit is complete and did not find an architectural fault.
+- The clearly safe backend cleanups are done: `storage_ref_adapter.create(...)` option validation and `stagedState.view` removal.
+- The committed-root adapter cleanup is complete.
+- The focused standard data front-end audit is complete and found no cleanup candidate.
+- The focused status-lane audit is complete and found no architecture issue.
+- Focused status declaration validation tests are complete.
+- The focused actions/reset/commit lifecycle audit is complete.
+- Safe action lifecycle cleanup is complete.
+- The careful action lifecycle cleanup is complete.
+- Framework fallback UI now uses the live module draw-and-commit lifecycle entry point.
 
-Suggested scope for the next audit:
+Suggested choices:
 
-- `adamant-ModpackLib/src/core/module_state/00_init.lua`
-- `adamant-ModpackLib/src/core/module_state/persistent/*`
-- `adamant-ModpackLib/src/core/module_state/staged/*`
-- `adamant-ModpackLib/src/core/module_state/storage_ref_adapter.lua`
-- `adamant-ModpackLib/tests/TestModuleState_PersistentState.lua`
-- `adamant-ModpackLib/tests/TestModuleState_StagedState.lua`
-- internal consumers in `managed_module_lifecycle.lua` and Framework profile apply
+1. Next subsystem audit:
+   - cache and shared data/events
 
 Keep `phaseGate` as an inventory item during this audit. Do not delete it globally until state refs, controls, widgets, cache/shared, and managed module draw orchestration have all been checked.
 
