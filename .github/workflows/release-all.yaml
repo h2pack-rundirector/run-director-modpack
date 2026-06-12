@@ -13,10 +13,16 @@ on:
       modules:
         description: "Comma-separated repo names to release (blank = all)"
         required: false
+      lib-version:
+        description: "ModpackLib dependency version to pin in child releases (blank keeps current pins)"
+        required: false
       include-boon-bans-private-padding:
         description: "Include Boon Bans private padding in the BoonBans child build"
         type: boolean
         default: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   release:
@@ -28,12 +34,32 @@ jobs:
           RELEASE_DISPATCH_TOKEN: ${{ secrets.RELEASE_DISPATCH_TOKEN }}
         run: |
           if [ -z "$RELEASE_DISPATCH_TOKEN" ]; then
-            echo "::error title=Missing RELEASE_DISPATCH_TOKEN::Set a repository or organization secret named RELEASE_DISPATCH_TOKEN using a fine-grained PAT or GitHub App token with Contents: read and Actions: read/write access to the shell, core, and module repositories."
+            echo "::error title=Missing RELEASE_DISPATCH_TOKEN::Set a repository or organization secret named RELEASE_DISPATCH_TOKEN using a fine-grained PAT or GitHub App token with Contents: read and Actions: read/write access to the shell, coordinator, and module repositories."
             exit 1
           fi
 
+      - name: Verify shell CI passed for release commit
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          ci_run=$(gh run list \
+            --repo "$REPO" \
+            --workflow "ci.yaml" \
+            --commit "$SHA" \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+          if [ -z "$ci_run" ]; then
+            echo "::error title=CI has not passed::No successful ci.yaml run was found for $SHA. Push the shell commit and wait for CI before release_all."
+            exit 1
+          fi
+          echo "Found successful CI run $ci_run for $SHA."
+
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           submodules: recursive
           token: ${{ secrets.RELEASE_DISPATCH_TOKEN }}
@@ -43,60 +69,26 @@ jobs:
           TAG: ${{ inputs.tag }}
           DRY_RUN: ${{ inputs.is-dry-run }}
           FILTER: ${{ inputs.modules }}
+          LIB_VERSION: ${{ inputs['lib-version'] }}
           INCLUDE_BOON_BANS_PRIVATE_PADDING: ${{ inputs.include-boon-bans-private-padding }}
         run: |
-          python3 ModpackTools/github/release_all.py \
-            --org "h2pack-rundirector" \
-            --team "adamantRunDirector" \
-            --core-repo "adamantRunDirector-RunDirector_Modpack" \
-            --tag "$TAG" \
-            --child-dry-run "$DRY_RUN" \
-            --targets "$FILTER" \
-            --repo-field "adamantRunDirector-BoonBans:include-private-padding=$INCLUDE_BOON_BANS_PRIVATE_PADDING" \
-            --plan-only
-
-      - name: Validate platform dependency versions
-        run: python3 ModpackTools/validate_platform_versions.py
-
-      - name: Install Lua validation runtime
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lua5.2 liblua5.2-dev luarocks
-          sudo luarocks --lua-version=5.2 install luaunit
-          sudo luarocks --lua-version=5.2 install luacheck
-
-      - name: Run ModpackLib tests
-        working-directory: adamant-ModpackLib
-        run: lua5.2 tests/all.lua
-
-      - name: Validate coordinator sources
-        run: |
-          (
-            cd adamantRunDirector-RunDirector_Modpack
-            luacheck src/
-            find src -type f -name '*.lua' -print0 | xargs -0 -r -n1 luac5.2 -p
+          args=(
+            --org "h2pack-rundirector"
+            --team "adamantRunDirector"
+            --coordinator-repo "adamantRunDirector-RunDirector_Modpack"
+            --dependency-org "h2-modpack"
+            --dependency-repo "adamant-ModpackLib"
+            --tag "$TAG"
+            --child-dry-run "$DRY_RUN"
+            --targets "$FILTER"
+            --pin-coordinator-module-deps
+            --repo-field "adamantRunDirector-BoonBans:include-private-padding=$INCLUDE_BOON_BANS_PRIVATE_PADDING"
           )
-
-      - name: Validate module sources
-        run: |
-          shopt -s nullglob
-          for repo in Submodules/adamantRunDirector-*; do
-            if [ ! -d "$repo/src" ]; then
-              continue
-            fi
-
-            echo "=== Validating $repo ==="
-            (
-              cd "$repo"
-              luacheck src/
-              find src -type f -name '*.lua' -print0 | xargs -0 -r -n1 luac5.2 -p
-
-              if [ -f tests/all.lua ]; then
-                echo "--- Running tests for $repo ---"
-                lua5.2 tests/all.lua
-              fi
-            )
-          done
+          if [ -n "$LIB_VERSION" ]; then
+            args+=(--module-field "lib-version=$LIB_VERSION")
+            args+=(--coordinator-field "lib-version=$LIB_VERSION")
+          fi
+          python3 ModpackTools/github/release_all.py "${args[@]}" --plan-only
 
       - name: Trigger release workflows
         env:
@@ -104,13 +96,23 @@ jobs:
           TAG: ${{ inputs.tag }}
           DRY_RUN: ${{ inputs.is-dry-run }}
           FILTER: ${{ inputs.modules }}
+          LIB_VERSION: ${{ inputs['lib-version'] }}
           INCLUDE_BOON_BANS_PRIVATE_PADDING: ${{ inputs.include-boon-bans-private-padding }}
         run: |
-          python3 ModpackTools/github/release_all.py \
-            --org "h2pack-rundirector" \
-            --team "adamantRunDirector" \
-            --core-repo "adamantRunDirector-RunDirector_Modpack" \
-            --tag "$TAG" \
-            --child-dry-run "$DRY_RUN" \
-            --targets "$FILTER" \
+          args=(
+            --org "h2pack-rundirector"
+            --team "adamantRunDirector"
+            --coordinator-repo "adamantRunDirector-RunDirector_Modpack"
+            --dependency-org "h2-modpack"
+            --dependency-repo "adamant-ModpackLib"
+            --tag "$TAG"
+            --child-dry-run "$DRY_RUN"
+            --targets "$FILTER"
+            --pin-coordinator-module-deps
             --repo-field "adamantRunDirector-BoonBans:include-private-padding=$INCLUDE_BOON_BANS_PRIVATE_PADDING"
+          )
+          if [ -n "$LIB_VERSION" ]; then
+            args+=(--module-field "lib-version=$LIB_VERSION")
+            args+=(--coordinator-field "lib-version=$LIB_VERSION")
+          fi
+          python3 ModpackTools/github/release_all.py "${args[@]}"
