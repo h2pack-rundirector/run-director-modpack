@@ -69,10 +69,6 @@ jobs:
         working-directory: adamant-ModpackLib
         run: lua5.2 tests/all.lua
 
-      - name: Run ModpackFramework tests
-        working-directory: adamant-ModpackFramework
-        run: lua5.2 tests/all.lua
-
       - name: Validate coordinator sources
         run: |
           (
