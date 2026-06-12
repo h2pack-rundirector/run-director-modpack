@@ -15,12 +15,18 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Lua validation runtime
+      - name: Setup Lua
+        uses: leafo/gh-actions-lua@v10
+        with:
+          luaVersion: "5.2"
+
+      - name: Setup Luarocks
+        uses: leafo/gh-actions-luarocks@v4
+
+      - name: Install validation tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y lua5.2 liblua5.2-dev luarocks
-          sudo luarocks --lua-version=5.2 install luaunit
-          sudo luarocks --lua-version=5.2 install luacheck
+          luarocks install luaunit
+          luarocks install luacheck
 
       - name: Validate platform dependency versions
         run: python3 ModpackTools/validate_platform_versions.py
