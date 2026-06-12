@@ -23,6 +23,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  TOOLS_REF: "release-tools-2026-06-12"
 
 jobs:
   release:
@@ -80,6 +81,8 @@ jobs:
             --child-dry-run "$DRY_RUN"
             --targets "$FILTER"
             --pin-coordinator-module-deps
+            --module-field "tools-ref=$TOOLS_REF"
+            --coordinator-field "tools-ref=$TOOLS_REF"
             --repo-field "adamantRunDirector-BoonBans:include-private-padding=$INCLUDE_BOON_BANS_PRIVATE_PADDING"
           )
           if [ -n "$LIB_VERSION" ]; then
@@ -105,6 +108,8 @@ jobs:
             --child-dry-run "$DRY_RUN"
             --targets "$FILTER"
             --pin-coordinator-module-deps
+            --module-field "tools-ref=$TOOLS_REF"
+            --coordinator-field "tools-ref=$TOOLS_REF"
             --repo-field "adamantRunDirector-BoonBans:include-private-padding=$INCLUDE_BOON_BANS_PRIVATE_PADDING"
           )
           if [ -n "$LIB_VERSION" ]; then
