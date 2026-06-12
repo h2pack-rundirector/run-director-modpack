@@ -23,7 +23,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  TOOLS_REF: "release-tools-2026-06-12"
+  TOOLS_REF: "release-tools-V2"
 
 jobs:
   release:
