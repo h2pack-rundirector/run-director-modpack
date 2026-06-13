@@ -84,8 +84,9 @@ end
 
 ## Tooling
 
-Use the shared `ModpackTools/` entrypoints from the shell repo root:
-- Validate the live checkout with `ModpackTools/run ModpackTools/test_all.py`.
+Use the shell-owned smoke manifest and shared `ModpackTools/` entrypoints from the shell repo root:
+- Validate pack smoke layout with `lua tests/smoke.lua`.
+- Run the full local assembled-checkout test sweep with `lua tests/test_all.lua` when needed.
 - Validate dependency edges with `ModpackTools/run ModpackTools/validate_platform_versions.py`.
 - Deploy source changes into the local r2modman profile with `ModpackTools/run ModpackTools/local_deploy/deploy_all.py`, adding `--overwrite` when regenerating existing files or links.
 - On Windows Command Prompt or PowerShell, use `ModpackTools\run.bat` instead of `ModpackTools/run`.

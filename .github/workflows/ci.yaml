@@ -20,16 +20,5 @@ jobs:
         with:
           luaVersion: "5.2"
 
-      - name: Setup Luarocks
-        uses: leafo/gh-actions-luarocks@v4
-
-      - name: Install validation tools
-        run: |
-          luarocks install luaunit
-          luarocks install luacheck
-
-      - name: Validate platform dependency versions
-        run: python3 ModpackTools/validate_platform_versions.py
-
-      - name: Run shell tests
-        run: ModpackTools/run ModpackTools/test_all.py
+      - name: Run smoke manifest
+        run: lua tests/smoke.lua

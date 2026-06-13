@@ -65,6 +65,9 @@ jobs:
           submodules: recursive
           token: ${{ secrets.RELEASE_DISPATCH_TOKEN }}
 
+      - name: Validate platform dependency versions
+        run: python3 ModpackTools/validate_platform_versions.py
+
       - name: Validate release plan
         env:
           TAG: ${{ inputs.tag }}
@@ -107,6 +110,7 @@ jobs:
             --tag "$TAG"
             --child-dry-run "$DRY_RUN"
             --targets "$FILTER"
+            --verify-ci
             --pin-coordinator-module-deps
             --module-field "tools-ref=$TOOLS_REF"
             --coordinator-field "tools-ref=$TOOLS_REF"
