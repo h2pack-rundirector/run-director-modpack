@@ -20,5 +20,5 @@ jobs:
         with:
           luaVersion: "5.2"
 
-      - name: Run smoke manifest
+      - name: Run smoke
         run: lua tests/smoke.lua

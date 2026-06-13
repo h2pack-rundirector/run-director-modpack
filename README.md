@@ -18,10 +18,20 @@ run-director-modpack/
 git clone --recurse-submodules https://github.com/h2pack-rundirector/run-director-modpack.git
 lua tests/smoke.lua
 lua tests/test_all.lua
+ModpackTools/run ModpackTools/local_test/all.py
 ModpackTools/run ModpackTools/local_deploy/deploy_all.py
 ```
 
-Commit CI only runs the shell smoke manifest. Release All checks platform dependency edges and verifies selected child repos have successful CI for the exact release branch commits before dispatching child releases.
+Commit CI only runs the shell smoke script. Local deploy runs that same smoke preflight before writing to the live profile. Release All checks platform dependency edges and verifies selected child repos have successful CI for the exact release branch commits before dispatching child releases.
+
+When adding or removing module submodules, use the registration tool so
+`.gitmodules` and coordinator dependencies stay aligned. Smoke derives its
+module roster from `.gitmodules`.
+
+```bash
+ModpackTools/run ModpackTools/new_module/register_submodules.py
+ModpackTools/run ModpackTools/new_module/register_submodules.py --prune
+```
 
 On Windows Command Prompt or PowerShell, use `ModpackTools\run.bat` instead of
 `ModpackTools/run`. The launcher picks an available Python 3 command

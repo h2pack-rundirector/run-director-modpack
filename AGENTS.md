@@ -12,15 +12,15 @@ Contact points are the only places where broad shape/type validation belongs:
 - `managedModule.create(...)` owns internal module construction: prepared definitions, persistent/staged state bindings, runtime context, UI context, controls, action buffers, and callback-safe host projection.
 - `module.activate()` / `managed_module_activation.lua` own activation side effects: receipt install/commit/rollback, hook/shared/overlay/mutation refresh, live-module publication, old-module retirement, and `onActivate(...)`.
 - Registration APIs own their registries: hooks, overlays, integrations, cache/shared data, coordinators, widgets, and lifecycle callbacks validate inputs when registered.
-- Lib/Core modpack initialization owns pack-level external input: coordinator config, profiles, discovered modules, runtime prerequisites, HUD/UI setup, and hash/profile boundary behavior.
+- Lib modpack initialization owns pack-level external input: coordinator config, profiles, discovered modules, runtime prerequisites, HUD/UI setup, and hash/profile boundary behavior.
 - Cross-language/external reads own their translation boundary: game state, config files, hash/profile strings, ROM APIs, ModUtil APIs, Chalk config, and user-editable data.
 
 After a contact point validates or constructs a value, downstream Lib/modpack code should usually trust it:
-- Modpack discovery should trust prepared definitions and prepared storage metadata; it should not re-validate definition ids, storage aliases, or hash group key-prefix syntax.
+- Lib modpack discovery should trust prepared definitions and prepared storage metadata; it should not re-validate definition ids, storage aliases, or hash group key-prefix syntax.
 - State/widget/hash/profile internals should trust prepared storage nodes and alias maps; they should not repeat primitive alias/type checks unless accepting external keys or values.
 - Hook/integration/overlay dispatch should trust registered callback records; it should not re-check callback shape at every internal hop.
 - Module internals should trust Lib-created stores, staged UI state, action buffers, runtime/UI contexts, callback hosts, table handles, and prepared definitions.
-- Modpack runtime/UI code should trust modpack discovery snapshots produced by modpack discovery.
+- Lib modpack runtime/UI code should trust Lib modpack discovery snapshots produced by Lib modpack discovery.
 
 Distinguish optional nil-handling from defensive type-checking:
 
@@ -59,7 +59,7 @@ Avoid fake objects and pure forwarding:
 - Private/support files should provide helper pieces used by that orchestration.
 
 Global/stable anchors:
-- Keep hot-reload-stable anchors for owner identity, hook/overlay lifecycle, and Lib/modpack runtime registries.
+- Keep hot-reload-stable anchors for owner identity, hook/overlay lifecycle, and Lib runtime registries.
 - Do not attach ordinary module data or implementation helpers to those anchors.
 - If a module needs its own private bus, name it for that module-specific role rather than using generic `internal`.
 
@@ -84,11 +84,12 @@ end
 
 ## Tooling
 
-Use the shell-owned smoke manifest and shared `ModpackTools/` entrypoints from the shell repo root:
+Use the shell-owned smoke script and shared `ModpackTools/` entrypoints from the shell repo root:
 - Validate pack smoke layout with `lua tests/smoke.lua`.
-- Run the full local assembled-checkout test sweep with `lua tests/test_all.lua` when needed.
+- Run the full local assembled-checkout test sweep with `ModpackTools/run ModpackTools/local_test/all.py` when needed.
+- Register or prune module submodules with `ModpackTools/run ModpackTools/new_module/register_submodules.py`; this also syncs coordinator deps. Smoke derives its module roster from `.gitmodules`.
 - Validate dependency edges with `ModpackTools/run ModpackTools/validate_platform_versions.py`.
-- Deploy source changes into the local r2modman profile with `ModpackTools/run ModpackTools/local_deploy/deploy_all.py`, adding `--overwrite` when regenerating existing files or links.
+- Deploy source changes into the local r2modman profile with `ModpackTools/run ModpackTools/local_deploy/deploy_all.py`; deploy runs smoke first when `tests/smoke.lua` exists. Add `--overwrite` when regenerating existing files or links.
 - On Windows Command Prompt or PowerShell, use `ModpackTools\run.bat` instead of `ModpackTools/run`.
 
 Treat older `Setup/...` commands as stale for these shell repos unless a specific module still owns a local setup script.
