@@ -22,3 +22,7 @@
 	path = Submodules/adamantRunDirector-BiomeControl
 	url = https://github.com/h2pack-rundirector/adamantRunDirector-BiomeControl.git
 	branch = main
+[submodule "Submodules/adamantRunDirector-Run_Planner"]
+	path = Submodules/adamantRunDirector-Run_Planner
+	url = https://github.com/h2pack-rundirector/adamantRunDirector-Run_Planner.git
+	branch = main
