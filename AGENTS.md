@@ -1,95 +1,180 @@
 # Agent Instructions
 
+This is the Run Director modpack shell repo. It owns submodule assembly,
+pack-level tooling, smoke tests, deployment, and release orchestration. Most
+active module work happens inside submodules, especially:
+
+- `Submodules/adamantRunDirector-Run_Planner`
+- `adamantRunDirector-RunDirector_Modpack`
+- `adamant-ModpackLib` when intentionally updating shared Lib infra
+
+The previous Lib-heavy agent guidance is preserved in `AGENTS.lib-infra.md`.
+Read that file when the task is actually about ModpackLib internals. For normal
+Run Director shell/module work, this file is the primary guidance.
+
+## Repository Workflow
+
+Always inspect the live worktree before acting. The shell repo can look clean
+while a submodule is dirty, and a shell pointer can be stale while the child
+repo already has the real change.
+
+Use the shell repo root for pack-level tooling:
+
+- Smoke layout: `lua tests/smoke.lua`
+- Full assembled local tests: `ModpackTools/run ModpackTools/local_test/all.py`
+- Dependency validation: `ModpackTools/run ModpackTools/validate_platform_versions.py`
+- Local deploy: `ModpackTools/run ModpackTools/local_deploy/deploy_all.py --fast`
+- Full relink/regeneration deploy only when needed:
+  `ModpackTools/run ModpackTools/local_deploy/deploy_all.py --overwrite`
+
+On Windows shells, use `ModpackTools\run.bat` instead of `ModpackTools/run`.
+Treat older `Setup/...` commands as stale unless a specific module still owns
+one.
+
+Do not edit deployed r2modman profile copies directly. Edit the repo source and
+deploy through `ModpackTools`.
+
+## Git And Submodules
+
+When changing a submodule, commit and push the child repo first. Then commit and
+push the shell repo pointer. A shell commit that points at an unpushed child
+revision is broken for everyone else.
+
+Recommended closeout order:
+
+1. In the child repo, run focused validation.
+2. Commit the child repo with a Conventional Commit message.
+3. Push the child repo.
+4. In the shell repo, stage the submodule pointer.
+5. Commit the pointer with a Conventional Commit message.
+6. Push the shell repo.
+
+Use `git status --short --branch` in both the shell and relevant submodules
+before declaring the work complete.
+
+Do not revert user changes in unrelated submodules or files. If an unrelated
+submodule pointer is dirty, leave it alone unless the user explicitly asks for
+that pointer update.
+
+## Run_Planner Shape
+
+Run Planner is declarative first and runtime second. Prefer improving the data
+model and planning layer before adding runtime special cases.
+
+Important areas:
+
+- `src/mods/biomes/`: biome declarations, layout metadata, parser, and catalog.
+- `src/mods/controls/`: UI control templates and their runtime snapshots.
+- `src/mods/rewards/`: reward primitives, bundles, surfaces, storage, UI, and
+  reward declaration rules.
+- `src/mods/route/`: row engine, timeline, run context, targets, markers, and
+  reward planning.
+- `src/mods/logic/`: runtime hooks that consume the execution plan and apply it
+  to game generation.
+
+The execution path should stay simple:
+
+1. Controls produce route snapshots.
+2. Route context walks routes in run order and validates rooms/rewards/NPCs/
+   features.
+3. Execution plan compiles validated snapshots.
+4. Runtime hooks consume the plan with minimal interpretation.
+
+Avoid making runtime hooks re-solve UI/data decisions. If runtime needs complex
+logic, check whether the plan should carry a clearer value instead.
+
+## Data Modeling
+
+Use game-domain language where possible. If the game models something as a
+reward, do not model it as a room merely because that is easier in the UI.
+Recent examples: Clockwork Goal and Devotion/Trial routing.
+
+Keep biome-structure rules in biome declarations or biome reward files. Keep
+global reward primitive/bundle rules in `src/mods/rewards/declarations/`.
+
+Separate these concepts:
+
+- `biomeDepthCache`: biome-local depth cache behavior.
+- `biomeEncounterDepth`: encounter-depth counter, including bounded min/max
+  when vanilla/unknown choices make it ambiguous.
+- `roomHistoryOrdinal`: route-wide room-history spacing axis for NPCs and
+  route features.
+
+Do not let a generic row coordinate stand in for those counters.
+
+Chaos gates are intentionally deferred as route-structural detours, not ordinary
+features. Natural Chaos is currently suppressed for route predictability. Do
+not re-enable Chaos routing without reading the Chaos notes in
+`Submodules/adamantRunDirector-Run_Planner/docs/REWARD_GENERATION_MODEL.md`.
+
+## UI And Performance
+
+The planner UI is a hot path. Avoid fresh allocations during draw. Prefer:
+
+- cached option tables,
+- mutable value-state/color tables,
+- dirty-state rebuilds,
+- shared decoration helpers,
+- stable dropdown value lists where context changes should color values instead
+  of reallocating or reshaping them.
+
+Use one UI language:
+
+- Declaration-time impossible options can be hidden.
+- Context-invalid options should remain visible and be colored invalid.
+- Downstream content after the first blocking invalid can be greyed/inactive.
+- Enrichment colors are allowed only when the full route is valid.
+- Inline invalid labels should not be reintroduced; route status and markers are
+  the common invalid-reporting path.
+
+When a bug is really a control/template contract issue, fix the contract rather
+than patching each caller. Keep caller-owned draw option tables read-only.
+
 ## Validation And Trust Boundaries
 
-Prefer validating data at contact points, then trusting validated internals.
+Validate at contact points, then trust constructed internals. Do not add broad
+defensive nil/type checks in inner loops just to restate construction
+invariants. Optional callbacks may be nil; validated internal services should
+not need repeated shape checks.
 
-Contact points are the only places where broad shape/type validation belongs:
-- `prepareDefinition(...)` owns module definition validation: required metadata, definition field names, stable module id/name rules, hash group hint shape, structural fingerprint inputs, and storage-schema handoff.
-- Storage preparation owns storage validation: root aliases, packed child aliases, table row aliases, storage type fields, axes, defaults, packed bit layout, and table schema shape.
-- Persistent/staged state construction owns config hydration validation: external config table shape, persisted values, staged UI state, status state, and runtime store construction.
-- `lib.createModule(...)` and the declaration facade own author-facing module option validation: host opts, callback surfaces, declarations, owner identity, and structural reload inputs.
-- `managedModule.create(...)` owns internal module construction: prepared definitions, persistent/staged state bindings, runtime context, UI context, controls, action buffers, and callback-safe host projection.
-- `module.activate()` / `managed_module_activation.lua` own activation side effects: receipt install/commit/rollback, hook/shared/overlay/mutation refresh, live-module publication, old-module retirement, and `onActivate(...)`.
-- Registration APIs own their registries: hooks, overlays, integrations, cache/shared data, coordinators, widgets, and lifecycle callbacks validate inputs when registered.
-- Lib modpack initialization owns pack-level external input: coordinator config, profiles, discovered modules, runtime prerequisites, HUD/UI setup, and hash/profile boundary behavior.
-- Cross-language/external reads own their translation boundary: game state, config files, hash/profile strings, ROM APIs, ModUtil APIs, Chalk config, and user-editable data.
+Good validation boundaries in this repo:
 
-After a contact point validates or constructs a value, downstream Lib/modpack code should usually trust it:
-- Lib modpack discovery should trust prepared definitions and prepared storage metadata; it should not re-validate definition ids, storage aliases, or hash group key-prefix syntax.
-- State/widget/hash/profile internals should trust prepared storage nodes and alias maps; they should not repeat primitive alias/type checks unless accepting external keys or values.
-- Hook/integration/overlay dispatch should trust registered callback records; it should not re-check callback shape at every internal hop.
-- Module internals should trust Lib-created stores, staged UI state, action buffers, runtime/UI contexts, callback hosts, table handles, and prepared definitions.
-- Lib modpack runtime/UI code should trust Lib modpack discovery snapshots produced by Lib modpack discovery.
+- biome/reward/NPC/feature declaration parsing,
+- storage/control preparation,
+- route snapshot creation,
+- route context target and legality builders,
+- execution-plan compilation,
+- runtime game-state translation at hook boundaries.
 
-Distinguish optional nil-handling from defensive type-checking:
+For impossible internal states, prefer a clear invariant failure at the boundary
+and a focused test. Do not scatter hot-reload or partial-state guards through
+the draw/runtime path.
 
-```lua
--- Keep: optional callback is absent.
-if callback == nil then return true end
+Use LuaCATS annotations for internal parameter shape when helpful. Do not add
+runtime type checks only to restate annotations.
 
--- Avoid after construction/registration already validated callback shape.
-if type(callback) ~= "function" then return true end
-```
+## Testing
 
-For impossible internal states, prefer one semantic invariant error over broad repeated audits. For example, use "expected managed store binding" rather than checking every field on a Lib-owned state table at every call site.
+For Run_Planner module edits, use:
 
-Do not paper over hot-reload partial-state bugs with scattered defensive checks. If a hot-reload edge case needs protection, validate or assert it at the reload boundary and add a test for that boundary.
+- `lua tests/all.lua`
+- `luacheck src tests`
+- `rtk git diff --check`
 
-Use LuaCATS annotations to document internal parameter types. Do not add runtime type checks only to restate annotations.
+For shell-level changes, use the narrowest appropriate shell validation:
 
-When removing defensive checks, keep tests focused on the boundary that owns the invariant.
+- docs-only: `rtk git diff --check`
+- pack layout: `lua tests/smoke.lua`
+- broad local assembled checkout: `ModpackTools/run ModpackTools/local_test/all.py`
 
-## Composition And Ownership
+Run performance/allocation tests when touching planner draw paths, route
+context rebuilds, value-state decoration, or dropdown option generation.
 
-Prefer explicit dependency composition over global buses.
+## Documentation
 
-Use persistent globals only for hot-reload-stable anchors or host-owned registries that must survive reload. Do not use them as a general dependency bus for data objects, services, helpers, or cross-file function gathering.
+When data/modeling decisions change, update the nearest module doc in
+`Submodules/adamantRunDirector-Run_Planner/docs/`. Do not leave design notes in
+comments when they belong in the design/audit docs.
 
-Preferred dependency patterns:
-- Use `create(...)` for constructed data/runtime objects.
-- Use `bind(...)` when a module captures dependencies and returns a bound behavior object.
-- Use ENVY import args for small behavior files where import-time dependency capture is clearer than ceremony.
-- Pass targeted dependencies, not broad `context` or `data` blobs, unless the object is genuinely the domain object being consumed.
-
-Avoid fake objects and pure forwarding:
-- Do not return module tables whose methods only forward to another table.
-- Do not add `local module = {}` wrappers unless the file is actually modeling an object or public surface.
-- Header/public files should own public function shape and orchestration.
-- Private/support files should provide helper pieces used by that orchestration.
-
-Global/stable anchors:
-- Keep hot-reload-stable anchors for owner identity, hook/overlay lifecycle, and Lib runtime registries.
-- Do not attach ordinary module data or implementation helpers to those anchors.
-- If a module needs its own private bus, name it for that module-specific role rather than using generic `internal`.
-
-Current authored callback lanes:
-- Draw callbacks receive `(host, ui)`. Use `ui.draw` for widgets/control drawing, `ui.data` for staged UI-owned settings, `ui.actions` for one-shot runtime intent, `ui.status` for runtime-authored state shown in UI, `ui.shared` for shared data/events, and `ui.controls` for declared controls.
-- Runtime callbacks receive `(host, runtime)`. Use `runtime.data` for committed settings, `runtime.status` for runtime-authored status writes, `runtime.data.cache.currentRun` for declared current-run scratch state, `runtime.shared` for shared data/events, and `runtime.controls` for control reads.
-- Commit observers receive `(host, runtime, commit)`. Use `commit.actions` to inspect one-shot UI intent and `runtime.data` to read the committed result of the draw cycle.
-- Do not reintroduce older draw-context names such as `draw.session` or `draw.host`; `host` and `ui` are separate callback parameters now.
-
-Visibility:
-- Prefer grep-visible ownership at public/API definition sites and important call sites.
-- Avoid local aliases that only redirect one or two calls.
-- Local aliases are acceptable when repeated heavily, capturing a real domain object, or improving semantic clarity.
-- Avoid fake public wrappers that only forward to another table:
-
-```lua
--- Avoid
-function public.foo(...)
-    return private.foo(...)
-end
-```
-
-## Tooling
-
-Use the shell-owned smoke script and shared `ModpackTools/` entrypoints from the shell repo root:
-- Validate pack smoke layout with `lua tests/smoke.lua`.
-- Run the full local assembled-checkout test sweep with `ModpackTools/run ModpackTools/local_test/all.py` when needed.
-- Register or prune module submodules with `ModpackTools/run ModpackTools/new_module/register_submodules.py`; this also syncs coordinator deps. Smoke derives its module roster from `.gitmodules`.
-- Validate dependency edges with `ModpackTools/run ModpackTools/validate_platform_versions.py`.
-- Deploy source changes into the local r2modman profile with `ModpackTools/run ModpackTools/local_deploy/deploy_all.py`; deploy runs smoke first when `tests/smoke.lua` exists. Add `--overwrite` when regenerating existing files or links.
-- On Windows Command Prompt or PowerShell, use `ModpackTools\run.bat` instead of `ModpackTools/run`.
-
-Treat older `Setup/...` commands as stale for these shell repos unless a specific module still owns a local setup script.
+Keep docs honest about current behavior. If a feature is deferred or disabled,
+say that directly instead of describing the intended future state as live.
